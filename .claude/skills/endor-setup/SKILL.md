@@ -85,23 +85,73 @@ Create or update `.claude/settings.json` in the project root:
 
 Tell the user: **You must restart Claude Code after creating or modifying settings.json for the MCP server to become available.**
 
-## Step 3: Choose Authentication Method
+## Step 3: Authenticate
 
-Ask the user which authentication provider they use:
+Ask the user how they want to authenticate. Present these options:
 
-| Provider | `ENDOR_MCP_SERVER_AUTH_MODE` | Additional Config |
-|----------|-------------------------------|-------------------|
+### Option A: CLI Authentication (Recommended)
+
+This authenticates the `endorctl` CLI directly, which handles most scanning operations. It opens a browser for OAuth login and caches credentials locally.
+
+First, ask which auth provider they use:
+
+| Provider | `--auth-mode` value | Additional Flags |
+|----------|---------------------|------------------|
 | Google | `google` | None |
 | GitHub | `github` | None |
 | GitLab | `gitlab` | None |
-| Enterprise SSO | `sso` | Also set `ENDOR_MCP_SERVER_AUTH_TENANT` |
-| Email | `email` | Also set `ENDOR_MCP_SERVER_AUTH_EMAIL` |
+| Enterprise SSO | `sso` | `--auth-tenant <tenant-name>` |
+| Browser (generic) | `browser-auth` | None |
 
-Update the `ENDOR_MCP_SERVER_AUTH_MODE` in settings.json accordingly.
+Then run `endorctl init` with their chosen provider. The namespace (`-n`) should use the value from Step 4, so if the user already knows their namespace, include it here. Otherwise use `demo-trial` as a placeholder and update later.
 
-On first MCP tool call, the server will automatically open a browser window for authentication. The token is cached for 1 hour.
+```bash
+# Google (default)
+npx -y endorctl init --auth-mode google -n <namespace>
 
-### For CI/CD or headless environments
+# GitHub
+npx -y endorctl init --auth-mode github -n <namespace>
+
+# GitLab
+npx -y endorctl init --auth-mode gitlab -n <namespace>
+
+# Enterprise SSO
+npx -y endorctl init --auth-mode sso --auth-tenant <tenant-name> -n <namespace>
+```
+
+This will open a browser window for the user to complete the login flow. After successful authentication, credentials are cached locally by `endorctl`.
+
+Verify CLI authentication succeeded:
+
+```bash
+npx -y endorctl auth --print-access-token -n <namespace>
+```
+
+If this prints a token, CLI auth is working.
+
+After CLI auth succeeds, also update `ENDOR_MCP_SERVER_AUTH_MODE` in `settings.json` to match the same provider so the MCP server uses the same auth method:
+
+```json
+"ENDOR_MCP_SERVER_AUTH_MODE": "google"
+```
+
+### Option B: MCP Server Auth Only
+
+If the user prefers not to run CLI auth separately, they can rely on the MCP server's built-in authentication. On the first MCP tool call, the server will automatically open a browser window for login. The token is cached for 1 hour.
+
+Set the auth mode in `settings.json`:
+
+| Provider | `ENDOR_MCP_SERVER_AUTH_MODE` | Additional Env Vars |
+|----------|-------------------------------|---------------------|
+| Google | `google` | None |
+| GitHub | `github` | None |
+| GitLab | `gitlab` | None |
+| Enterprise SSO | `sso` | `ENDOR_MCP_SERVER_AUTH_TENANT` |
+| Email | `email` | `ENDOR_MCP_SERVER_AUTH_EMAIL` |
+
+### Option C: API Key Auth (CI/CD / Headless)
+
+For CI/CD pipelines or headless environments where no browser is available, use API key authentication.
 
 Instruct the user to set these environment variables themselves (never ask them to paste credentials into chat):
 
@@ -110,11 +160,30 @@ export ENDOR_API_CREDENTIALS_KEY=<your-api-key>
 export ENDOR_API_CREDENTIALS_SECRET=<your-api-secret>
 ```
 
+These can also be added to the `env` block in `settings.json` for the MCP server:
+
+```json
+"env": {
+  "ENDOR_NAMESPACE": "<namespace>",
+  "ENDOR_API": "https://api.endorlabs.com",
+  "ENDOR_API_CREDENTIALS_KEY": "<your-api-key>",
+  "ENDOR_API_CREDENTIALS_SECRET": "<your-api-secret>"
+}
+```
+
 Or use a pre-existing token:
 
 ```bash
 export ENDOR_TOKEN=<your-token>
 ```
+
+For headless CLI auth (no browser available but using OAuth):
+
+```bash
+npx -y endorctl init --auth-mode google --headless-mode -n <namespace>
+```
+
+This prints a URL that the user can open on any device to complete authentication.
 
 ## Step 4: Configure Namespace
 
@@ -124,11 +193,21 @@ The namespace is their Endor Labs organization name. They can find it at [app.en
 
 ### 4.2 Update settings.json
 
-Replace `"demo-trial"` with their actual namespace in the `ENDOR_NAMESPACE` field.
+Replace `"your-namespace"` with their actual namespace in the `ENDOR_NAMESPACE` field.
 
 If they don't have a namespace yet, `demo-trial` provides limited demo access.
 
-### 4.3 For new users without an account
+### 4.3 If the user used CLI auth (Option A in Step 3)
+
+The namespace was already passed via `-n <namespace>` during `endorctl init`. Make sure the same namespace is set in `settings.json` so the MCP server uses it too.
+
+If they used a placeholder namespace during init, re-run with the correct one:
+
+```bash
+npx -y endorctl init --auth-mode <their-auth-mode> -n <actual-namespace>
+```
+
+### 4.4 For new users without an account
 
 Direct them to:
 - Sign up at [endorlabs.com](https://www.endorlabs.com) (free tier available)
@@ -136,16 +215,28 @@ Direct them to:
 
 ## Step 5: Verify Setup
 
-After restarting Claude Code, try using one of the MCP tools to verify the connection:
+### 5.1 Verify CLI Authentication
+
+If the user used CLI auth (Option A), verify the CLI can authenticate:
+
+```bash
+npx -y endorctl auth --print-access-token -n <namespace>
+```
+
+If this prints a token (a long base64 string), CLI authentication is working.
+
+### 5.2 Verify MCP Server Connection
+
+After restarting Claude Code, try using one of the MCP tools to verify the MCP server connection:
 
 Use the `check_dependency_for_vulnerabilities` MCP tool with a known package:
 - ecosystem: `npm`
 - dependency_name: `lodash`
 - version: `4.17.20`
 
-If this returns vulnerability data, the setup is working.
+If this returns vulnerability data, the MCP server setup is working.
 
-If it opens a browser for authentication, that's expected on first use. Complete the login flow.
+If it opens a browser for authentication, that's expected on first use (for Option B users). Complete the login flow.
 
 ## Step 6: Success
 
@@ -179,11 +270,15 @@ Your Endor Labs MCP server is configured and ready. Here's what to try:
 | `npx: command not found` | Install Node.js v18+ (npx is bundled) |
 | `endorctl: not found via npx` | Check internet connection; run `npx -y endorctl --version` |
 | MCP tools not showing in Claude Code | Restart Claude Code after editing settings.json |
-| Browser auth not opening | Check `ENDOR_MCP_SERVER_AUTH_MODE` is set correctly |
-| `namespace not found` | Verify ENDOR_NAMESPACE matches your org name at app.endorlabs.com |
+| Browser auth not opening | Check `--auth-mode` flag or `ENDOR_MCP_SERVER_AUTH_MODE` is set correctly |
+| `endorctl init` fails | Ensure internet access and correct `--auth-mode`; try `--auth-mode browser-auth` as fallback |
+| `auth --print-access-token` returns error | Token may have expired; re-run `endorctl init` to re-authenticate |
+| CLI auth works but MCP tools fail | Ensure `ENDOR_MCP_SERVER_AUTH_MODE` in settings.json matches the `--auth-mode` used in `endorctl init` |
+| `namespace not found` | Verify namespace matches your org name at app.endorlabs.com; ensure same namespace in both CLI (`-n`) and settings.json |
 | `permission denied` | Verify your account has access to the namespace |
 | Timeout on first run | First `npx` run downloads the package - this may take 30-60 seconds |
 | Behind a corporate proxy | Set `HTTPS_PROXY` environment variable in settings.json env block |
+| Headless environment, no browser | Use `endorctl init --headless-mode` or API key auth (Option C) |
 
 ## Available MCP Tools After Setup
 
