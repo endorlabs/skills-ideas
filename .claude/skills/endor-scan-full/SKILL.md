@@ -45,10 +45,10 @@ Use the `scan` MCP tool with these parameters:
 - `scan_types`: `["vulnerabilities", "dependencies", "secrets", "sast"]`
 - `scan_options`: `{ "quick_scan": false }` (disabling quick_scan enables full reachability analysis)
 
-If the MCP tool is not available, fall back to CLI:
+If the MCP tool returns an error, **report the exact error to the user first** — do NOT guess or fabricate the cause. Only fall back to CLI if the MCP server is genuinely unavailable (not configured or not installed):
 
 ```bash
-npx -y endorctl scan --path $(pwd) --output-type summary
+npx -y endorctl scan --path $(pwd) --output-type summary -n <namespace>
 ```
 
 ### Step 4: Present Results
@@ -111,7 +111,10 @@ The finding data includes reachability information and call paths when available
 
 ## Error Handling
 
-- **Auth error**: Suggest `/endor-setup`
+**CRITICAL: Always report exact error messages to the user. Never fabricate, guess, or invent error diagnoses.**
+
+- **Auth error**: Tell user to complete browser login, then retry. Do NOT bypass by switching to CLI. If persistent, suggest `/endor-setup`.
 - **Build fails**: The full scan may need the project to be buildable. Suggest fixing build errors first, or use `/endor-scan` for a quick scan that doesn't require building.
 - **Timeout**: Large monorepos may take longer. Suggest scanning a specific subdirectory.
-- **MCP not available**: Fall back to CLI command
+- **MCP not available**: Suggest `/endor-setup`. Only fall back to CLI if the user confirms MCP cannot be configured.
+- **Unknown error**: Show the exact error text to the user. Suggest `/endor-troubleshoot`. Do NOT guess the cause.

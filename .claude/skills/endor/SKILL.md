@@ -26,6 +26,7 @@ Analyze the user's request and route accordingly:
 | Upgrade a dependency, breaking changes, impact analysis | `/endor-upgrade` |
 | Explain a CVE, what is CVE-XXXX | `/endor-explain` |
 | Package score, package health, should I use X | `/endor-score` |
+| Dependency scan, SCA, vulnerable dependencies, scan deps | `/endor-sca` |
 | Secrets scan, find credentials, exposed keys | `/endor-secrets` |
 | SAST, static analysis, code vulnerabilities | `/endor-sast` |
 | License check, license compliance | `/endor-license` |

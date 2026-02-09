@@ -29,6 +29,7 @@ Present this reference to the user:
 |---------|-------------|
 | `/endor-scan` | Quick security scan (seconds) |
 | `/endor-scan-full` | Full scan with reachability analysis (minutes) |
+| `/endor-sca` | Scan dependencies for known vulnerabilities (SCA) |
 | `/endor-sast` | Static application security testing |
 | `/endor-secrets` | Scan for exposed secrets and credentials |
 | `/endor-container` | Scan container images and Dockerfiles |

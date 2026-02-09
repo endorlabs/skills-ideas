@@ -10,7 +10,8 @@
       ],
       "env": {
         "ENDOR_NAMESPACE": "${ENDOR_NAMESPACE}",
-        "ENDOR_API": "https://api.endorlabs.com"
+        "ENDOR_API": "https://api.endorlabs.com",
+        "ENDOR_MCP_SERVER_AUTH_MODE": "google"
       }
     }
   }

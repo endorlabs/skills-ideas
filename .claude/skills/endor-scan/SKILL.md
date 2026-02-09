@@ -54,17 +54,32 @@ If the user's intent is ambiguous, default to a full quick scan. If they ask to 
 
 If the user explicitly requests specific scan types (e.g. "only SCA" or "only SAST"), adjust `scan_types` accordingly, but the default should always include all four types above.
 
-If the MCP tool is not available or fails due to auth errors, fall back to CLI:
+### MCP Tool Failure / CLI Fallback
+
+If the MCP `scan` tool is not available, returns an error, or is not responding:
+
+1. **First, diagnose the actual error.** Read the error message from the MCP tool response carefully. Do NOT guess or assume the cause — report the exact error to the user.
+
+2. **Common causes and fixes:**
+   - **Auth error / browser opens**: The MCP server needs authentication. Tell the user to complete the browser login flow, then retry. If no browser opens, check that `ENDOR_MCP_SERVER_AUTH_MODE` is set in `.claude/settings.json`.
+   - **MCP server not configured**: Suggest running `/endor-setup` to configure it.
+   - **Namespace error**: Check that `ENDOR_NAMESPACE` is set correctly in `.claude/settings.json`.
+
+3. **Only fall back to CLI if the MCP server is genuinely unavailable** (not configured, not installed, or the user explicitly requests CLI mode). Do NOT fall back to CLI just because of an auth error — auth errors should be resolved first.
+
+4. **CLI fallback commands** (only when MCP is genuinely unavailable):
 
 ```bash
-# Full quick scan
-endorctl scan --path . --quick-scan --dependencies --sast --secrets --output-type summary
+# Full quick scan (requires prior auth via `endorctl init`)
+npx -y endorctl scan --path $(pwd) --quick-scan --dependencies --sast --secrets --output-type summary -n <namespace>
 
 # Incremental PR scan
-endorctl scan --path . --pr --dependencies --sast --secrets --output-type summary
+npx -y endorctl scan --path $(pwd) --pr --dependencies --sast --secrets --output-type summary -n <namespace>
 ```
 
 **IMPORTANT:** The `--sast` flag must be explicitly passed to the CLI. Without it, only SCA/dependency findings are returned. Similarly, `--secrets` must be explicit. The `--dependencies` flag enables SCA scanning.
+
+**IMPORTANT:** Do NOT invent or fabricate error diagnoses. If you are unsure why a scan failed, show the user the exact error output and suggest `/endor-troubleshoot` or `/endor-setup`.
 
 ### Step 3: Retrieve Finding Details
 
@@ -122,7 +137,11 @@ Present findings in this order:
 
 ## Error Handling
 
-- **Auth error / browser opens**: Expected on first use. Tell user to complete browser login, then retry.
-- **No manifest found**: Tell user no supported project detected, list supported languages
-- **Scan timeout**: Suggest using fewer scan_types or scanning a subdirectory
-- **MCP not available**: Fall back to CLI command, suggest `/endor-setup`
+**CRITICAL: Always report exact error messages to the user. Never fabricate, guess, or invent error diagnoses.** If an error occurs, show the user what actually happened and suggest next steps.
+
+- **Auth error / browser opens**: Expected on first use. Tell user to complete browser login, then retry. Do NOT bypass this by switching to CLI — resolve the auth issue first.
+- **Missing `ENDOR_MCP_SERVER_AUTH_MODE`**: Tell user to add it to `.claude/settings.json` and restart Claude Code, or run `/endor-setup`.
+- **No manifest found**: Tell user no supported project detected, list supported languages.
+- **Scan timeout**: Suggest using fewer scan_types or scanning a subdirectory.
+- **MCP not available**: Suggest `/endor-setup`. Only fall back to CLI if the user confirms the MCP server cannot be configured.
+- **Unknown error**: Show the exact error text to the user. Suggest `/endor-troubleshoot` for diagnosis. Do NOT guess the cause.
