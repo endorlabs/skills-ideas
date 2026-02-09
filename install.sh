@@ -39,21 +39,24 @@ fi
 
 # Choose installation type
 echo "Where do you want to install the skill?"
-echo "1) Current project (./.claude) - Team can share via git"
-echo "2) User home (~/.claude) - Available in all projects"
-echo "3) Custom path"
+echo "1) Current project (./.claude) - Team can share via git (copies files)"
+echo "2) User home (~/.claude) - Available in all projects (symlinks for auto-updates)"
+echo "3) Custom path (copies files)"
 echo
 read -p "Choose option [1-3]: " choice
 
 case $choice in
     1)
         INSTALL_DIR="./.claude"
+        USE_SYMLINKS=false
         ;;
     2)
         INSTALL_DIR="$HOME/.claude"
+        USE_SYMLINKS=true
         ;;
     3)
         read -p "Enter custom path: " INSTALL_DIR
+        USE_SYMLINKS=false
         ;;
     *)
         echo "Invalid choice. Exiting."
@@ -65,23 +68,59 @@ esac
 mkdir -p "$INSTALL_DIR/skills"
 mkdir -p "$INSTALL_DIR/rules"
 
-# Copy files
 echo "Installing to $INSTALL_DIR..."
 
-# Copy skills
-if ! cp -r "$SKILL_SOURCE/skills/"* "$INSTALL_DIR/skills/"; then
-    echo "Error: Failed to copy skills from $SKILL_SOURCE/skills/"
-    exit 1
-fi
+if [ "$USE_SYMLINKS" = true ]; then
+    echo "Using symlinks (updates to the source repo will apply automatically)"
+    echo
 
-# Copy rules
-if ! cp -r "$SKILL_SOURCE/rules/"* "$INSTALL_DIR/rules/"; then
-    echo "Error: Failed to copy rules from $SKILL_SOURCE/rules/"
-    exit 1
+    # Symlink each skill directory
+    for skill_dir in "$SKILL_SOURCE/skills/"*/; do
+        skill_name=$(basename "$skill_dir")
+        target="$INSTALL_DIR/skills/$skill_name"
+        if [ -L "$target" ]; then
+            rm "$target"
+        elif [ -d "$target" ]; then
+            echo "  Warning: $skill_name exists as a regular directory, replacing with symlink"
+            rm -rf "$target"
+        fi
+        ln -s "$skill_dir" "$target"
+        echo "  Linked: $skill_name"
+    done
+
+    # Symlink each rule file
+    for rule_file in "$SKILL_SOURCE/rules/"*.md; do
+        rule_name=$(basename "$rule_file")
+        target="$INSTALL_DIR/rules/$rule_name"
+        if [ -L "$target" ]; then
+            rm "$target"
+        elif [ -f "$target" ]; then
+            echo "  Warning: $rule_name exists as a regular file, replacing with symlink"
+            rm "$target"
+        fi
+        ln -s "$rule_file" "$target"
+        echo "  Linked: $rule_name"
+    done
+else
+    echo "Copying files..."
+    echo
+
+    # Copy skills
+    if ! cp -r "$SKILL_SOURCE/skills/"* "$INSTALL_DIR/skills/"; then
+        echo "Error: Failed to copy skills from $SKILL_SOURCE/skills/"
+        exit 1
+    fi
+
+    # Copy rules
+    if ! cp -r "$SKILL_SOURCE/rules/"* "$INSTALL_DIR/rules/"; then
+        echo "Error: Failed to copy rules from $SKILL_SOURCE/rules/"
+        exit 1
+    fi
 fi
 
 # Merge or create settings.json
 if [ -f "$INSTALL_DIR/settings.json" ]; then
+    echo
     echo "Existing settings.json found. Please manually add MCP server config:"
     echo
     cat "$SKILL_SOURCE/settings.json"
@@ -107,6 +146,11 @@ echo "==================================="
 echo "Installation complete!"
 echo "==================================="
 echo
+if [ "$USE_SYMLINKS" = true ]; then
+    echo "Skills are symlinked to: $SCRIPT_DIR"
+    echo "Any updates to that repo (e.g. git pull) will apply automatically."
+    echo
+fi
 echo "Available commands:"
 echo "  /endor            - Main security assistant (routes to specialized skills)"
 echo "  /endor-setup      - First-time setup wizard"
