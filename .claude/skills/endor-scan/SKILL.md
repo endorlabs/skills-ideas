@@ -88,7 +88,29 @@ The scan tool returns a list of finding UUIDs sorted by severity. For each criti
 - `uuid`: The finding UUID from the scan results
 - `resource_type`: `Finding`
 
-### Step 4: Present Results
+### Step 4: Interpret Reachability Tags
+
+Even in quick scan mode, findings may include reachability tags. **Endor Labs does NOT use simple `FINDING_TAGS_REACHABLE` / `FINDING_TAGS_UNREACHABLE` tags.** Reachability is expressed on **two separate dimensions** in the `finding_tags` array:
+
+#### Dependency Reachability (is the vulnerable package imported/used by your code?)
+- `FINDING_TAGS_REACHABLE_DEPENDENCY` — your code imports/uses this dependency
+- `FINDING_TAGS_UNREACHABLE_DEPENDENCY` — your code does NOT import/use this dependency
+
+#### Function Reachability (is the specific vulnerable function called?)
+- `FINDING_TAGS_REACHABLE_FUNCTION` — a call path exists from your code to the vulnerable function
+- `FINDING_TAGS_UNREACHABLE_FUNCTION` — no call path reaches the vulnerable function
+- `FINDING_TAGS_POTENTIALLY_REACHABLE_FUNCTION` — a call path may exist but could not be fully confirmed
+
+#### Other Relevant Tags
+- `FINDING_TAGS_PHANTOM` — dependency appears in lockfile but is not actually installed/used
+- `FINDING_TAGS_DIRECT` — vulnerability is in a direct dependency
+- `FINDING_TAGS_TRANSITIVE` — vulnerability is in a transitive dependency
+- `FINDING_TAGS_FIX_AVAILABLE` — an upgrade path exists
+- `FINDING_TAGS_UNFIXABLE` — no known fix available
+
+When presenting findings, use these tags to indicate reachability status. If a finding has `REACHABLE_DEPENDENCY` + `REACHABLE_FUNCTION`, flag it as actively exploitable. If it has `UNREACHABLE_DEPENDENCY` + `UNREACHABLE_FUNCTION`, note it as lower priority. Do NOT report reachability as "undetermined" when these granular tags are present.
+
+### Step 5: Present Results
 
 ```markdown
 ## Security Scan Complete
@@ -108,10 +130,10 @@ The scan tool returns a list of finding UUIDs sorted by severity. For each criti
 
 ### Top Critical/High Findings
 
-| # | Package | CVE | Severity | Description |
-|---|---------|-----|----------|-------------|
-| 1 | {pkg} | {cve} | Critical | {desc} |
-| 2 | {pkg} | {cve} | High | {desc} |
+| # | Package | CVE | Severity | Reachability | Description |
+|---|---------|-----|----------|--------------|-------------|
+| 1 | {pkg} | {cve} | Critical | {reachability} | {desc} |
+| 2 | {pkg} | {cve} | High | {reachability} | {desc} |
 
 ### Next Steps
 
@@ -124,8 +146,8 @@ The scan tool returns a list of finding UUIDs sorted by severity. For each criti
 ### Priority Order
 
 Present findings in this order:
-1. Critical vulnerabilities
-2. High vulnerabilities
+1. Critical vulnerabilities (reachable function first, then unreachable)
+2. High vulnerabilities (reachable function first, then unreachable)
 3. Secrets/credentials
 4. SAST critical/high
 5. License issues

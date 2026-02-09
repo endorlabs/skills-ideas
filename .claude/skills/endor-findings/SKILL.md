@@ -107,7 +107,43 @@ The CLI returns JSON with this structure. Use these exact field paths when parsi
 - The CVE/GHSA ID is in `spec.extra_key` or `spec.finding_metadata.vulnerability.meta.name`
 - CVSS score is at `spec.finding_metadata.vulnerability.spec.cvss_v3_severity.score`
 
-### Step 3: Present Results
+### Step 3: Interpret Reachability Tags
+
+**IMPORTANT: Endor Labs does NOT use simple `FINDING_TAGS_REACHABLE` / `FINDING_TAGS_UNREACHABLE` tags.** Reachability is expressed on **two separate dimensions** in the `finding_tags` array:
+
+#### Dependency Reachability (is the vulnerable package imported/used by your code?)
+- `FINDING_TAGS_REACHABLE_DEPENDENCY` — your code imports/uses this dependency
+- `FINDING_TAGS_UNREACHABLE_DEPENDENCY` — your code does NOT import/use this dependency
+
+#### Function Reachability (is the specific vulnerable function called?)
+- `FINDING_TAGS_REACHABLE_FUNCTION` — a call path exists from your code to the vulnerable function
+- `FINDING_TAGS_UNREACHABLE_FUNCTION` — no call path reaches the vulnerable function
+- `FINDING_TAGS_POTENTIALLY_REACHABLE_FUNCTION` — a call path may exist but could not be fully confirmed
+
+#### Other Relevant Tags
+- `FINDING_TAGS_PHANTOM` — dependency appears in lockfile but is not actually installed/used
+- `FINDING_TAGS_DIRECT` — vulnerability is in a direct dependency
+- `FINDING_TAGS_TRANSITIVE` — vulnerability is in a transitive dependency
+- `FINDING_TAGS_FIX_AVAILABLE` — an upgrade path exists
+- `FINDING_TAGS_UNFIXABLE` — no known fix available
+
+#### Deriving Reachability for Display
+
+Use both dimensions to derive the reachability label for the findings table:
+
+| Dependency Tag | Function Tag | Display As |
+|---------------|--------------|------------|
+| REACHABLE_DEPENDENCY | REACHABLE_FUNCTION | **Reachable** |
+| REACHABLE_DEPENDENCY | POTENTIALLY_REACHABLE_FUNCTION | **Potentially Reachable** |
+| REACHABLE_DEPENDENCY | UNREACHABLE_FUNCTION | **Dep Used, Func Unreachable** |
+| UNREACHABLE_DEPENDENCY | UNREACHABLE_FUNCTION | **Unreachable** |
+| (PHANTOM tag present) | Any | **Phantom** |
+| REACHABLE_DEPENDENCY | (no function tag) | **Dep Reachable** |
+| UNREACHABLE_DEPENDENCY | (no function tag) | **Dep Unreachable** |
+
+Do NOT report reachability as "undetermined" or "unknown" when these granular tags are present.
+
+### Step 4: Present Results
 
 ```markdown
 ## Security Findings
@@ -117,16 +153,16 @@ The CLI returns JSON with this structure. Use these exact field paths when parsi
 
 ### Findings
 
-| # | Severity | Category | Package | CVE/Issue | Reachable | Description |
-|---|----------|----------|---------|-----------|-----------|-------------|
-| 1 | Critical | Vuln | {pkg} | {cve} | Yes | {desc} |
+| # | Severity | Category | Package | CVE/Issue | Reachability | Description |
+|---|----------|----------|---------|-----------|--------------|-------------|
+| 1 | Critical | Vuln | {pkg} | {cve} | Reachable | {desc} |
 | 2 | High | SAST | {file} | {rule} | N/A | {desc} |
-| 3 | High | Vuln | {pkg} | {cve} | No | {desc} |
+| 3 | High | Vuln | {pkg} | {cve} | Unreachable | {desc} |
 
 ### Summary
 
-- {n} Critical ({r} reachable)
-- {n} High ({r} reachable)
+- {n} Critical ({r} reachable function, {p} potentially reachable)
+- {n} High ({r} reachable function, {p} potentially reachable)
 - {n} Secrets
 - {n} SAST issues
 - {n} License risks
@@ -139,7 +175,7 @@ The CLI returns JSON with this structure. Use these exact field paths when parsi
 4. **View SAST details:** `/endor-findings sast`
 ```
 
-### Step 4: Pagination
+### Step 5: Pagination
 
 If more results are available, inform the user and offer to show the next page.
 
@@ -147,13 +183,15 @@ If more results are available, inform the user and offer to show the next page.
 
 Always present findings in this priority:
 
-1. Critical + Reachable
-2. High + Reachable
-3. Secrets/Credentials
-4. Critical + Unreachable
-5. SAST Critical/High
-6. License issues
-7. Medium/Low
+1. Critical + Reachable Function
+2. Critical + Potentially Reachable Function
+3. High + Reachable Function
+4. High + Potentially Reachable Function
+5. Secrets/Credentials
+6. Critical + Unreachable
+7. SAST Critical/High
+8. License issues
+9. Medium/Low
 
 ## Data Sources — Endor Labs Only
 
