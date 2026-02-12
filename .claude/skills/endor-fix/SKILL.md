@@ -15,47 +15,47 @@ Help users fix security vulnerabilities by finding safe upgrade paths and provid
 
 ## Input Parsing
 
-The user can provide:
+The user can provide the text from the finding that was relayed to them (perhaps, through a ticket), or at least one of the following:
 
 1. **CVE ID** - e.g., `CVE-2021-23337`
 2. **Package name** - e.g., `lodash`
-3. **Finding UUID** - from `/endor-findings` output
+3. **Finding UUID**
 
 ## Workflow
 
 ### Step 1: Identify the Vulnerability
+If the user provided a finding UUID:
+1. Use `get_resource` MCP tool with `resource_type: Finding` and the UUID
+2. If you were able to find the finding, proceed to Step 2. Otherwise continue in Step 1.
 
-If the user provided a CVE ID:
-1. Use `get_endor_vulnerability` MCP tool with `vuln_id` parameter to get CVE details
-2. Identify affected packages from the vulnerability data
+If the user provided a CVE ID or package name:
+1. Check for a finding in the Endor Labs platform. Use the `/endor-api` skill to look at the `Finding` resource with the appropriate filter based on what the user provided. If the `/endor-api` skill is not available, continue.
+2. If you were able to find the finding, proceed to Step 2. Otherwise continue in Step 1.
 
-If the user provided a package name:
+If the user provided a package name and a finding wasn't found:
 1. Use `check_dependency_for_vulnerabilities` MCP tool to get all CVEs for that package
    - Parameters: `ecosystem`, `dependency_name`, `version`
 2. The tool returns vulnerability counts and recommended upgrade versions
+3. Proceed to Step 2.
 
-If the user provided a finding UUID:
-1. Use `get_resource` MCP tool with `resource_type: Finding` and the UUID
+If no finding has been found, update the user.
 
 ### Step 2: Find Safe Upgrade Path
+Use the `/endor-upgrade-impact` skill to determine if there is a pre-computed safe upgrade recommendation. If there is a recommendation, proceed to Step 3. If the skill is not available, continue.
 
-The `check_dependency_for_vulnerabilities` MCP tool automatically returns recommended upgrade versions that fix the vulnerabilities. Use it with:
+If there is no recommendation from following the `/endor-upgrade-impact` skill, the `check_dependency_for_vulnerabilities` MCP tool automatically returns recommended upgrade versions that fix the vulnerabilities. Use it with:
 
 - `ecosystem`: Package ecosystem (npm, python, go, java, maven)
 - `dependency_name`: Affected package name
 - `version`: Current version
 
-The tool returns the latest available version and recommended versions that fix the vulnerabilities.
-
-### Step 3: Determine Fix Strategy
-
-Evaluate the best fix approach:
+The tool returns the latest available version and recommended versions that fix the vulnerabilities. Evaluate the best fix approach:
 
 1. **Patch upgrade** (e.g., 4.17.15 -> 4.17.21) - Preferred, lowest risk
 2. **Minor upgrade** (e.g., 4.17.x -> 4.18.x) - Low risk, may have new features
 3. **Major upgrade** (e.g., 4.x -> 5.x) - Higher risk, may have breaking changes
 
-### Step 4: Present Remediation
+### Step 3: Present Remediation
 
 ```markdown
 ## Remediation: {CVE-ID}
@@ -70,13 +70,15 @@ Evaluate the best fix approach:
 | Description | {description} |
 | Reachable | {yes/no} |
 
+**Note:** The `Reachable` value is only known if a finding is found in Step 1.
+
 ### Fix
 
 **Recommended upgrade:** {package}@{current} -> {package}@{safe_version}
 
 **Upgrade type:** {Patch/Minor/Major}
 
-```bash
+~~~bash
 # npm
 npm install {package}@{safe_version}
 
@@ -88,7 +90,7 @@ pip install {package}=={safe_version}
 
 # go
 go get {package}@v{safe_version}
-```
+~~~
 
 ### All Safe Versions
 
@@ -101,21 +103,14 @@ go get {package}@v{safe_version}
 ### Additional Fixes Needed
 
 {If multiple CVEs affect this package, list them all and whether the recommended version fixes them}
-
-### Next Steps
-
-1. **Check upgrade impact:** `/endor-upgrade {package} {safe_version}`
-2. **Verify fix:** `/endor-check {package} {safe_version}`
-3. **Run scan:** `/endor-scan` to verify all issues resolved
 ```
 
-### Step 5: Offer to Apply Fix
+### Step 4: Offer to Apply Fix
 
 Ask the user if they want you to apply the fix:
 
-1. Update the dependency in the manifest file
+1. Update the dependency (or parent dependency, in the case of a transitive dependency vulnerability) in the manifest file
 2. Run the package manager install command
-3. Verify the fix with `/endor-check`
 
 ## Data Sources — Endor Labs Only
 
