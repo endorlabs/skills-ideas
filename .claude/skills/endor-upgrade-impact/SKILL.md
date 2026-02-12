@@ -1,8 +1,8 @@
 ---
-name: endor-upgrade
+name: endor-upgrade-impact
 description: |
-  Analyze the impact of upgrading a dependency before you do it. Uses Upgrade Impact Analysis to find safe versions that fix vulnerabilities with minimal breaking changes.
-  - MANDATORY TRIGGERS: endor upgrade, upgrade impact, breaking changes, change impact, dependency upgrade, upgrade analysis, endor-upgrade, should I upgrade
+  Analyze the impact of upgrading a dependency before you do it. Uses Endor Labs' Upgrade Impact Analysis to find safe versions that fix vulnerabilities with minimal breaking changes.
+  - MANDATORY TRIGGERS: endor upgrade, upgrade impact, breaking changes, change impact, dependency upgrade, upgrade analysis, endor-upgrade, should I upgrade, impact of upgrading
 ---
 
 # Endor Labs Upgrade Impact Analysis
@@ -12,7 +12,6 @@ Find safe dependency upgrades that fix vulnerabilities with minimal risk. Uses p
 ## Prerequisites
 
 - Endor Labs MCP server configured (run `/endor-setup` if not)
-- Project previously scanned (run `/endor-scan` first if not)
 
 ## Workflow
 
@@ -28,7 +27,7 @@ npx -y endorctl api list --resource Project -n $ENDOR_NAMESPACE \
 
 Or use the `get_resource` MCP tool with `resource_type: Project` and `name: {repo_name}`.
 
-If the project is not found, the user needs to run `/endor-scan` first to register it.
+If the project is not found, then let the user know and skip the rest of the steps.
 
 ### Step 2: Get Best Upgrade Recommendations
 
@@ -73,34 +72,24 @@ Pick the best upgrade for each package: the one that fixes the most vulnerabilit
 ### Recommendation
 
 - **LOW risk**: Safe to upgrade.
-  ```bash
-  npm install {package}@{to_version}
-  ```
+  ~~~bash
+  # npm
+  npm install {package}@{safe_version}
+
+  # yarn
+  yarn add {package}@{safe_version}
+
+  # pip
+  pip install {package}=={safe_version}
+
+  # go
+  go get {package}@v{safe_version}
+  ~~~
 - **MEDIUM risk**: Review changes carefully. Test thoroughly before deploying.
 - **HIGH risk**: Potentially breaking code-level changes detected. See detailed CIA below.
-
-### Next Steps
-
-1. **Apply upgrade:** I can update the manifest file for you
-2. **Verify after upgrade:** `/endor-scan`
-3. **Evaluate high-risk upgrade:** I can fetch detailed code-level changes (see below)
-4. **Check specific CVE:** `/endor-explain {cve}`
 ```
 
-### Step 4: Last Resort — Trigger a Fresh UIA Scan
-
-**Only use this if Step 2 returns a successful response (HTTP 200) but with no results** (i.e., the VersionUpgrade API has no pre-computed data for this project). This can happen if the project has never had Upgrade Impact Analysis run, or if the data has expired.
-
-```bash
-npx -y endorctl recommend dependency-upgrades --security-only --use-cia --persist \
-  --project-uuid={PROJECT_UUID} -n $ENDOR_NAMESPACE 2>/dev/null
-```
-
-This triggers a full UIA scan, which takes longer. After it completes, re-run Step 2 to retrieve the results.
-
-**Do NOT use this command if Step 2 returned data.** It should only be used when the API queries work but return empty results.
-
-### Step 5: Evaluate High-Risk Upgrades (On Request)
+### Step 4: Evaluate High-Risk Upgrades (On Request)
 
 High-risk upgrades have potentially breaking code-level changes identified through Endor Labs call graphs. **Only fetch CIA details if the user wants to evaluate a high-risk upgrade** — do not fetch this automatically.
 
@@ -131,8 +120,7 @@ Present the CIA results showing what code changes are needed:
 **CRITICAL: Use ONLY Endor Labs data. NEVER use external sources.**
 
 1. CLI API queries — `npx -y endorctl api list -r VersionUpgrade` (primary)
-2. MCP tools — `get_resource` with `resource_type: VersionUpgrade` (if available)
-3. CLI scan — `npx -y endorctl recommend dependency-upgrades` (last resort only — see Step 4)
+2. MCP tools — `get_resource` with `resource_type: VersionUpgrade` (only if available)
 
 **NEVER do any of the following to gather upgrade or vulnerability information:**
 - Search the web for package changelogs, release notes, or migration guides
@@ -155,7 +143,5 @@ All version information, vulnerability data, breaking change analysis, and upgra
 ## Error Handling
 
 - **License/permission error**: Upgrade Impact Analysis requires the **Endor Labs OSS Pro** license. If the API returns a permission or license error, inform the user: "Upgrade Impact Analysis is an OSS Pro feature. Please ensure your Endor Labs namespace has an active OSS Pro license. Visit [app.endorlabs.com](https://app.endorlabs.com) or contact your Endor Labs administrator to upgrade."
-- **Project not found**: Run `/endor-scan` first to register the project
-- **No VersionUpgrade data**: Try the last-resort scan in Step 4. If that also returns nothing, the project may need a fresh scan — suggest `/endor-scan`
-- **Package not in results**: The package may not have any recommended upgrades, or may already be at the safest version
+- **Package not in results**: The package may not have any recommended upgrades, or the package may already be at the recommended version
 - **Auth error**: Suggest `/endor-setup`
