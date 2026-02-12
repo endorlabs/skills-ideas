@@ -38,7 +38,7 @@ If the user provided a package name and a finding wasn't found:
 2. The tool returns vulnerability counts and recommended upgrade versions
 3. Proceed to Step 2.
 
-If no finding has been found, update the user.
+If no vulnerability / finding has been found, update the user. Indicate whether this is because they are already at a recommended version.
 
 ### Step 2: Find Safe Upgrade Path
 Use the `/endor-upgrade-impact` skill to determine if there is a pre-computed safe upgrade recommendation. If there is a recommendation, proceed to Step 3. If the skill is not available, continue.
