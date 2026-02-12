@@ -1,7 +1,7 @@
 ---
 name: endor-check
 description: |
-  Check if a specific dependency has known vulnerabilities. Provide a package name and optionally a version to get vulnerability information.
+  Check if a specific dependency has known vulnerabilities using Endor Labs. Provide a package name and optionally a version to get vulnerability information.
   - MANDATORY TRIGGERS: endor check, check dependency, check package, check vulnerability, is this package safe, endor-check
 ---
 
