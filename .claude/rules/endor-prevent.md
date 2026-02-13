@@ -1,0 +1,7 @@
+After every tool use (described below), determine if it involved installing dependencies or updating a package manifest file. If it did, utilize the `/endor-check` skill to check each dependency for known vulnerabilities using information from Endor Labs. 
+
+- **For Bash:** check if the command matches patterns like `npm install`, `npm i`, `npm ci`, `npm add`, `yarn add`, `yarn install`, `pnpm add`, `pnpm install`, `pip install`, `pip3 install`, `poetry add`, `poetry install`, `cargo add`, `cargo install`, `go get`, `go mod tidy`, `gem install`, `bundle install`, `bundle add`, or make/script targets with names suggesting dependency installation. Parse package names from the command (e.g. `npm install lodash express` -\u003e lodash, express). If no specific packages are named (e.g. bare `npm install` or `npm ci`), read the manifest file in the working directory to get the full dependency list.
+
+- **For Write/Edit:** check if `tool_input.file_path` is a dependency manifest file (package.json, requirements.txt, pyproject.toml, Pipfile, Cargo.toml, go.mod, go.sum, Gemfile, composer.json, pom.xml, build.gradle). Compare old_string and new_string (for Edit) or read the content (for Write) to identify newly added dependencies and their versions. CHECK EACH DEPENDENCY for vulnerabilities using the `/endor-check` skill.
+
+- If the tool use is NOT dependency-related, no further action required.

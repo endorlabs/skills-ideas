@@ -1,8 +1,8 @@
 ---
 name: endor-fix
 description: |
-  Help remediate security vulnerabilities by finding safe upgrade paths. Provides step-by-step fix instructions and can apply fixes automatically.
-  - MANDATORY TRIGGERS: endor fix, fix vulnerability, fix cve, remediate, how to fix, patch vulnerability, endor-fix, upgrade fix
+  Help remediate security vulnerabilities by finding safe upgrade paths. Uses information from Endor Labs to provides step-by-step fix instructions and can apply fixes automatically.
+  - MANDATORY TRIGGERS: endor fix, fix vulnerability, fix cve, remediate finding, remediate vuln, how to fix, patch vulnerability, endor-fix, upgrade fix, vuln fix
 ---
 
 # Endor Labs Remediation Guide
@@ -23,7 +23,7 @@ The user can provide the text from the finding that was relayed to them (perhaps
 
 ## Workflow
 
-### Step 1: Identify the Vulnerability
+### Step 1: Identify the Finding
 If the user provided a finding UUID:
 1. Use `get_resource` MCP tool with `resource_type: Finding` and the UUID
 2. If you were able to find the finding, proceed to Step 2. Otherwise continue in Step 1.
@@ -32,28 +32,12 @@ If the user provided a CVE ID or package name:
 1. Check for a finding in the Endor Labs platform. Use the `/endor-api` skill to look at the `Finding` resource with the appropriate filter based on what the user provided. If the `/endor-api` skill is not available, continue.
 2. If you were able to find the finding, proceed to Step 2. Otherwise continue in Step 1.
 
-If the user provided a package name and a finding wasn't found:
-1. Use `check_dependency_for_vulnerabilities` MCP tool to get all CVEs for that package
-   - Parameters: `ecosystem`, `dependency_name`, `version`
-2. The tool returns vulnerability counts and recommended upgrade versions
-3. Proceed to Step 2.
+If the user provided a package name and a finding wasn't found, use the `/endor-check` skill in lieu of this skill.
 
 If no vulnerability / finding has been found, update the user. Indicate whether this is because they are already at a recommended version.
 
-### Step 2: Find Safe Upgrade Path
-Use the `/endor-upgrade-impact` skill to determine if there is a pre-computed safe upgrade recommendation. If there is a recommendation, proceed to Step 3. If the skill is not available, continue.
-
-If there is no recommendation from following the `/endor-upgrade-impact` skill, the `check_dependency_for_vulnerabilities` MCP tool automatically returns recommended upgrade versions that fix the vulnerabilities. Use it with:
-
-- `ecosystem`: Package ecosystem (npm, python, go, java, maven)
-- `dependency_name`: Affected package name
-- `version`: Current version
-
-The tool returns the latest available version and recommended versions that fix the vulnerabilities. Evaluate the best fix approach:
-
-1. **Patch upgrade** (e.g., 4.17.15 -> 4.17.21) - Preferred, lowest risk
-2. **Minor upgrade** (e.g., 4.17.x -> 4.18.x) - Low risk, may have new features
-3. **Major upgrade** (e.g., 4.x -> 5.x) - Higher risk, may have breaking changes
+### Step 2: Find Upgrade Impact Analysis for Finding
+Use the `/endor-upgrade-impact` skill to determine if there is a pre-computed safe upgrade recommendation. If there is a recommendation, proceed to Step 4. If the skill is not available or if there is no recommendation from following the `/endor-upgrade-impact` skill, then use the `/endor-check` skill in lieu of this skill.
 
 ### Step 3: Present Remediation
 
