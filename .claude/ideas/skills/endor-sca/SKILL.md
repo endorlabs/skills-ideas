@@ -7,11 +7,7 @@ description: |
 
 # Endor Labs SCA Scanner
 
-Scan your project's dependencies for known vulnerabilities using Software Composition Analysis (SCA).
-
-## Prerequisites
-
-- Endor Labs MCP server configured (run `/endor-setup` if not)
+Scan project dependencies for known vulnerabilities.
 
 ## Supported Ecosystems
 
@@ -30,111 +26,67 @@ Scan your project's dependencies for known vulnerabilities using Software Compos
 
 ### Step 1: Detect Dependencies
 
-Identify the project's dependency ecosystem by looking for manifest and lock files in the repository root.
+Identify ecosystem by checking for manifest/lock files in repository root.
 
 ### Step 2: Run Dependency Scan
 
-Use the `scan` MCP tool with dependency-specific parameters:
-
-- `path`: The **absolute path** to the repository root (or specific directory)
+Use `scan` MCP tool:
+- `path`: **absolute path** to repository root
 - `scan_types`: `["vulnerabilities", "dependencies"]`
 - `scan_options`: `{ "quick_scan": true }`
 
-The `dependencies` scan type resolves the dependency tree and `vulnerabilities` matches them against the Endor Labs vulnerability database.
+`dependencies` resolves the tree; `vulnerabilities` matches against Endor Labs DB.
 
-### MCP Tool Failure / CLI Fallback
-
-If the MCP `scan` tool returns an error, **report the exact error to the user first** — do NOT guess or fabricate the cause. Only fall back to CLI if the MCP server is genuinely unavailable (not configured or not installed):
-
+**CLI fallback** (only if MCP genuinely unavailable):
 ```bash
 npx -y endorctl scan --path $(pwd) --dependencies --output-type summary -n <namespace>
 ```
 
-**IMPORTANT:** Do NOT invent or fabricate error diagnoses. If you are unsure why the scan failed, show the user the exact error output and suggest `/endor-troubleshoot` or `/endor-setup`.
+Never fabricate error diagnoses. Show exact errors and suggest `/endor-troubleshoot` or `/endor-setup`.
 
 ### Step 3: Retrieve Finding Details
 
-The scan returns finding UUIDs. For each critical/high finding, use the `get_resource` MCP tool:
-
-- `uuid`: The finding UUID
-- `resource_type`: `Finding`
+For each critical/high finding UUID, use `get_resource` MCP tool (`uuid`, `resource_type`: `Finding`).
 
 ### Step 4: Present Results
 
-```markdown
-## Dependency Scan Results
+Include: scanned path, ecosystem, dependency count, severity summary table (Critical/High/Medium/Low with counts and actions).
 
-**Path:** {scanned path}
-**Ecosystem:** {detected ecosystem(s)}
-**Dependencies Scanned:** {total count}
-
-### Vulnerability Summary
-
-| Severity | Count | Action |
-|----------|-------|--------|
-| Critical | {n} | Fix immediately |
-| High | {n} | Fix urgently |
-| Medium | {n} | Plan remediation |
-| Low | {n} | Track as debt |
-
-### Critical Vulnerabilities
-
-| # | Package | Version | CVE | Severity | Fixed In |
-|---|---------|---------|-----|----------|----------|
-| 1 | {pkg} | {ver} | {cve} | Critical | {fix_ver} |
-| 2 | {pkg} | {ver} | {cve} | Critical | {fix_ver} |
-
-### High Vulnerabilities
-
-| # | Package | Version | CVE | Severity | Fixed In |
-|---|---------|---------|-----|----------|----------|
-| 1 | {pkg} | {ver} | {cve} | High | {fix_ver} |
-
-### Dependency Details
-
-For each critical/high finding, include:
-- **Package:** {name}@{version}
-- **Vulnerability:** {CVE ID} — {brief description}
-- **Severity:** {severity} ({CVSS score if available})
-- **Fixed Version:** {version} (or "No fix available")
-- **Upgrade Path:** Direct dependency → transitive chain if applicable
-
-### Next Steps
-
-1. **Fix critical vulnerabilities:** `/endor-fix {top-cve}`
-2. **Check a specific package:** `/endor-check {package} {version}`
-3. **Analyze upgrade impact:** `/endor-upgrade {package}`
-4. **Full reachability scan:** `/endor-scan-full` to see which vulnerabilities are actually reachable
-5. **License compliance:** `/endor-license` to check dependency licenses
-```
+For each critical/high finding:
+- **Package:** name@version
+- **Vulnerability:** CVE ID + brief description
+- **Severity:** level (CVSS score if available)
+- **Fixed Version:** version or "No fix available"
+- **Upgrade Path:** direct dep -> transitive chain if applicable
 
 ### Priority Order
 
-Present findings in this order:
-1. Critical vulnerabilities with known fixes
-2. Critical vulnerabilities without fixes
-3. High vulnerabilities with known fixes
-4. High vulnerabilities without fixes
-5. Medium/Low vulnerabilities
+1. Critical with fixes -> Critical without fixes
+2. High with fixes -> High without fixes
+3. Medium/Low
 
-### Direct vs Transitive Dependencies
+### Direct vs Transitive
 
-When presenting findings, distinguish between:
-- **Direct dependencies** — listed in the project's manifest file, directly upgradable
-- **Transitive dependencies** — pulled in by direct dependencies, may require upgrading the parent package
+Distinguish between direct (in manifest, directly upgradable) and transitive (pulled by parent). For transitive vulns, identify the direct dependency that pulls it in.
 
-For transitive vulnerabilities, identify the direct dependency that pulls it in and suggest upgrading that package first.
+### Next Steps
 
-## Data Sources — Endor Labs Only
+1. `/endor-fix {top-cve}` - fix critical vulnerabilities
+2. `/endor-check {package} {version}` - check specific package
+3. `/endor-upgrade {package}` - analyze upgrade impact
+4. `/endor-scan-full` - full reachability analysis
+5. `/endor-license` - check dependency licenses
 
-**CRITICAL: NEVER use external websites for vulnerability or dependency information.** All dependency and vulnerability data MUST come from Endor Labs MCP tools or the `endorctl` CLI. Do NOT search the web or visit external vulnerability databases, package registries, or advisory sites. If data is unavailable, tell the user and suggest [app.endorlabs.com](https://app.endorlabs.com).
+For data source policy, read references/data-sources.md.
 
 ## Error Handling
 
-**CRITICAL: Always report exact error messages to the user. Never fabricate, guess, or invent error diagnoses.**
+Never fabricate error diagnoses. Show exact error messages.
 
-- **No vulnerabilities found**: Good news. Confirm the scan completed and suggest periodic re-scanning or `/endor-scan-full` for deeper reachability analysis.
-- **Auth error**: Tell user to complete browser login, then retry. Do NOT bypass by switching to CLI. If persistent, suggest `/endor-setup`.
-- **No manifest found**: Tell user no supported dependency files were detected. List supported ecosystems.
-- **MCP not available**: Suggest `/endor-setup`. Only fall back to CLI if the user confirms MCP cannot be configured.
-- **Unknown error**: Show the exact error text to the user. Suggest `/endor-troubleshoot`. Do NOT guess the cause.
+| Error | Action |
+|-------|--------|
+| No vulns found | Confirm scan complete, suggest `/endor-scan-full` for deeper analysis |
+| Auth error | Complete browser login, retry. If persistent, `/endor-setup` |
+| No manifest found | List supported ecosystems |
+| MCP unavailable | `/endor-setup`. CLI fallback only if user confirms |
+| Unknown error | Show exact error, suggest `/endor-troubleshoot` |

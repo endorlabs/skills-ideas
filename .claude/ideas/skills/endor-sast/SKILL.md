@@ -7,162 +7,110 @@ description: |
 
 # Endor Labs SAST Scanner
 
-Perform static application security testing to find code-level vulnerabilities.
-
-## Prerequisites
-
-- Endor Labs MCP server configured (run `/endor-setup` if not)
+Static application security testing for code-level vulnerabilities.
 
 ## Vulnerability Categories
 
 | Category | CWE | Risk |
 |----------|-----|------|
-| SQL Injection | CWE-89 | Critical - Data breach |
-| Command Injection | CWE-78 | Critical - System compromise |
-| XSS (Cross-Site Scripting) | CWE-79 | High - Session hijacking |
-| Path Traversal | CWE-22 | High - File access |
-| Insecure Deserialization | CWE-502 | High - Remote code execution |
-| Hardcoded Credentials | CWE-798 | High - Auth bypass |
-| Weak Cryptography | CWE-327 | Medium - Data exposure |
-| Information Disclosure | CWE-200 | Medium - Data leakage |
-| CORS Misconfiguration | CWE-942 | Medium - Cross-origin attacks |
-| Debug Mode in Production | CWE-489 | Medium - Info exposure |
+| SQL Injection | CWE-89 | Critical |
+| Command Injection | CWE-78 | Critical |
+| XSS | CWE-79 | High |
+| Path Traversal | CWE-22 | High |
+| Insecure Deserialization | CWE-502 | High |
+| Hardcoded Credentials | CWE-798 | High |
+| Weak Cryptography | CWE-327 | Medium |
+| Information Disclosure | CWE-200 | Medium |
+| CORS Misconfiguration | CWE-942 | Medium |
+| Debug Mode in Production | CWE-489 | Medium |
 
 ## AI False Positive Reduction
 
-Endor Labs offers AI-powered false positive analysis that uses an AI agent to review SAST findings and filter out false positives. This significantly reduces noise and lets you focus on real vulnerabilities.
+Endor Labs offers AI-powered false positive filtering (requires Code Pro license). Before scanning, ask user if they want to enable it:
 
-**This feature requires an Endor Labs Code Pro license.** When presenting the option, inform the user that AI false positive reduction is a Code Pro capability.
+- **Without AI** (default): Faster, may include false positives
+- **With AI** (Code Pro): Slower, filters false positives via AI review
 
-**Before running the scan, ask the user if they want to enable AI false positive reduction.** Present it as an option:
-
-- **Without AI analysis** (default): Faster scan, may include false positives
-- **With AI analysis** (requires Code Pro license): Slower scan, but filters out false positives using AI review
-
-If the user opts in (or says things like "reduce false positives", "use AI", "filter noise"), enable the `--ai-sast-analysis=agent-fallback` flag. If they encounter a licensing error, explain that this feature requires the Endor Labs Code Pro license and suggest they contact their Endor Labs account team or visit [endorlabs.com](https://www.endorlabs.com) for more information.
+Enable with `--ai-sast-analysis=agent-fallback` flag. If licensing error occurs, explain Code Pro requirement.
 
 ## Workflow
 
 ### Step 1: Run SAST Scan
 
-Use the `scan` MCP tool with SAST-specific parameters:
+Use `scan` MCP tool: `scan_types: ["sast"]`, `scan_options: { "quick_scan": true }`.
 
-- `path`: The **absolute path** to the repository root (or specific directory)
-- `scan_types`: `["sast"]`
-- `scan_options`: `{ "quick_scan": true }`
-
-If the MCP tool is not available, fall back to CLI:
-
-**Standard SAST scan:**
+CLI fallback:
 ```bash
+# Standard
 npx -y endorctl scan --path $(pwd) --sast --output-type summary 2>/dev/null
-```
 
-**SAST scan with AI false positive reduction:**
-```bash
+# With AI false positive reduction
 npx -y endorctl scan --path $(pwd) --sast --ai-sast-analysis=agent-fallback --output-type summary 2>/dev/null
 ```
 
-The `--ai-sast-analysis=agent-fallback` flag enables an AI agent that reviews each SAST finding to determine if it is a true positive or false positive. Findings identified as false positives are automatically filtered out of the results.
+### Step 2: Retrieve Details
 
-### Step 2: Retrieve Finding Details
-
-The scan returns finding UUIDs. For each finding, use the `get_resource` MCP tool:
-
-- `uuid`: The finding UUID
-- `resource_type`: `Finding`
+Use `get_resource` (resource_type: `Finding`) for each finding UUID from scan results.
 
 ### Step 3: Analyze Code Context
 
-Read the source files referenced in the findings to show the vulnerable code with surrounding context. Use the file path and line numbers from the finding data.
+Read source files referenced in findings. Show vulnerable code with surrounding context using file path and line numbers.
 
 ### Step 4: Present Results
 
 ```markdown
 ## SAST Analysis Results
 
-**Path:** {scanned path}
-**Issues Found:** {count}
-**AI False Positive Reduction:** {Enabled/Disabled}
+**Path:** {path} | **Issues:** {count} | **AI FP Reduction:** {Enabled/Disabled}
 
 ### Critical Issues
 
 #### {Issue #1}: {Title} ({CWE-ID})
-
-**File:** {file_path}:{line}
-**Severity:** Critical
-**CWE:** {CWE-ID} - {CWE Name}
+**File:** {path}:{line} | **Severity:** Critical
 
 **Vulnerable Code:**
-```{language}
-{vulnerable code snippet with line numbers}
+```{lang}
+{code snippet with line numbers}
 ```
 
-**Why This Is Dangerous:**
-{Brief explanation of the vulnerability and its impact}
+**Why dangerous:** {brief explanation}
 
-**Recommended Fix:**
-```{language}
-{fixed code snippet}
+**Fix:**
+```{lang}
+{fixed code}
 ```
-
-### High Issues
-
-{Same format as critical}
-
-### Medium Issues
-
-{Same format, briefer}
 
 ### Summary
 
 | Severity | Count | Categories |
 |----------|-------|------------|
-| Critical | {n} | {SQL Injection, Command Injection, ...} |
-| High | {n} | {XSS, Path Traversal, ...} |
-| Medium | {n} | {Weak Crypto, Info Disclosure, ...} |
-| Low | {n} | {Misc} |
+| Critical | {n} | {list} |
+| High | {n} | {list} |
+| Medium | {n} | {list} |
 
 ### Next Steps
-
-1. **Fix critical issues first** - These are exploitable vulnerabilities
-2. **Run again after fixes:** `/endor-sast` to verify
-3. **Full security scan:** `/endor-scan-full` for complete analysis
-4. **Pre-PR check:** `/endor-review` before merging
+1. Fix critical issues first
+2. `/endor-sast` — Verify fixes
+3. `/endor-scan-full` — Full analysis
+4. `/endor-review` — Pre-PR check
 ```
 
-## Language-Specific Guidance
+## Language-Specific Secure Patterns
 
-When presenting fixes, include language-specific secure patterns:
+**JS/TS:** `===` not `==`; avoid `eval()`, `Function()`, `setTimeout(string)`; `textContent` not `innerHTML`; `crypto.randomUUID()` not `Math.random()`
 
-### JavaScript/TypeScript
-- Use `===` instead of `==`
-- Avoid `eval()`, `Function()`, `setTimeout(string)`
-- Use `textContent` instead of `innerHTML`
-- Use `crypto.randomUUID()` not `Math.random()` for IDs
+**Python:** parameterized queries not f-strings; `subprocess.run([], shell=False)` not `os.system()`; `secrets` module for crypto; avoid `pickle.loads()` on untrusted data
 
-### Python
-- Use parameterized queries, not f-strings for SQL
-- Use `subprocess.run([], shell=False)` not `os.system()`
-- Use `secrets` module for cryptographic operations
-- Avoid `pickle.loads()` with untrusted data
+**Go:** `html/template` not `text/template`; `crypto/rand` not `math/rand`; `filepath.Clean()` for paths
 
-### Go
-- Use `html/template` not `text/template` for HTML
-- Use `crypto/rand` not `math/rand` for security
-- Use `filepath.Clean()` for path operations
+**Java:** `PreparedStatement` for SQL; `SecureRandom` for randomness; avoid `Runtime.exec()` with user input
 
-### Java
-- Use `PreparedStatement` for SQL
-- Use `java.security.SecureRandom`
-- Avoid `Runtime.exec()` with user input
-
-## Data Sources — Endor Labs Only
-
-**CRITICAL: NEVER use external websites for vulnerability or code security information.** All SAST findings MUST come from Endor Labs MCP tools or the `endorctl` CLI. Do NOT search the web or visit external sources. If data is unavailable, tell the user and suggest [app.endorlabs.com](https://app.endorlabs.com).
+For data source policy, read references/data-sources.md.
 
 ## Error Handling
 
-- **No issues found**: Confirm the scan completed successfully. Suggest running `/endor-scan-full` for deeper analysis.
-- **Auth error**: Suggest `/endor-setup`
-- **Unsupported language**: List supported languages and suggest alternatives
+| Error | Action |
+|-------|--------|
+| No issues found | Confirm scan completed; suggest `/endor-scan-full` for deeper analysis |
+| Auth error | Suggest `/endor-setup` |
+| Unsupported language | List supported languages and alternatives |

@@ -9,31 +9,24 @@ description: |
 
 Provide detailed information about a specific CVE or security finding.
 
-## Prerequisites
-
-- Endor Labs MCP server configured (run `/endor-setup` if not)
-
 ## Input Parsing
 
-The user can provide:
-
+Accepted inputs:
 1. **CVE ID** - e.g., `CVE-2021-23337`
 2. **Finding UUID** - from `/endor-findings` output
-3. **Package + vulnerability description** - e.g., "lodash prototype pollution"
+3. **Package + description** - e.g., "lodash prototype pollution"
 
-## Workflow
+## For CVE Lookup
 
-### For CVE Lookup
+### Step 1: Get Vulnerability Details
 
-#### Step 1: Get Vulnerability Details
+Use `get_endor_vulnerability` with the CVE ID.
 
-Use `get_endor_vulnerability` MCP tool with the CVE ID.
+### Step 2: Check Project Impact
 
-#### Step 2: Check if it affects current project
+Use `check_dependency_for_vulnerabilities` against project manifest files to determine if affected.
 
-Use the `check_dependency_for_vulnerabilities` MCP tool to see if any of the project's dependencies are affected by this CVE. Check the relevant packages from the project's manifest files.
-
-#### Step 3: Present Explanation
+### Step 3: Present
 
 ```markdown
 ## {CVE-ID}: {Title}
@@ -46,21 +39,15 @@ Use the `check_dependency_for_vulnerabilities` MCP tool to see if any of the pro
 | Severity | {severity} (CVSS: {score}) |
 | CWE | {cwe_id} - {cwe_name} |
 | Published | {date} |
-| Modified | {date} |
-| EPSS Score | {score}% probability of exploitation |
+| EPSS Score | {score}% exploitation probability |
 
 ### Description
-
-{Detailed description of the vulnerability}
+{Detailed description}
 
 ### Impact
-
-{What an attacker could do if this vulnerability is exploited}
+{What an attacker could do}
 
 ### Attack Vector
-
-{How the vulnerability can be exploited - network, local, etc.}
-
 **CVSS Vector:** {vector_string}
 
 | Component | Value |
@@ -72,51 +59,35 @@ Use the `check_dependency_for_vulnerabilities` MCP tool to see if any of the pro
 
 ### Affected Versions
 
-| Package | Affected Versions | Fixed Version |
-|---------|-------------------|---------------|
-| {pkg} | {range} | {fixed} |
+| Package | Affected | Fixed |
+|---------|----------|-------|
+| {pkg} | {range} | {version} |
 
-### Your Project Impact
-
-{If the CVE affects the current project:}
-
-- **Affected:** Yes
-- **Reachable:** {Yes/No}
-- **Package:** {package}@{version}
-- **Call Path:** {if reachable, show path}
-
-{If not affected:}
-- **Affected:** No - this CVE does not affect your current project
+### Your Project
+- **Affected:** {Yes/No}
+- **Reachable:** {Yes/No} (if affected)
+- **Package:** {package}@{version} (if affected)
 
 ### Remediation
-
-1. **Upgrade** to {package}@{fixed_version}
-2. **Verify** with `/endor-check {package} {fixed_version}`
-3. **Check impact** with `/endor-upgrade {package} {fixed_version}`
-
-### References
-
-{List of reference URLs from the CVE data}
+1. Upgrade to {package}@{fixed_version}
+2. Verify: `/endor-check {package} {fixed_version}`
+3. Check impact: `/endor-upgrade {package} {fixed_version}`
 ```
 
-### For Finding UUID Lookup
+## For Finding UUID Lookup
 
-#### Step 1: Get Finding Details
+### Step 1: Get Finding
 
-Use the `get_resource` MCP tool:
-- `uuid`: The finding UUID
-- `resource_type`: `Finding`
+Use `get_resource` with `resource_type: Finding` and the UUID.
 
-#### Step 2: Get Related Vulnerability (if applicable)
+### Step 2: Get Related CVE
 
-If the finding references a CVE, also use `get_endor_vulnerability` to get full CVE details.
+If finding references a CVE, also call `get_endor_vulnerability` for full details.
 
-#### Step 3: Present Finding Details
+### Step 3: Present
 
 ```markdown
 ## Finding: {title}
-
-### Overview
 
 | Field | Value |
 |-------|-------|
@@ -128,29 +99,22 @@ If the finding references a CVE, also use `get_endor_vulnerability` to get full 
 | File | {file_path}:{line} |
 
 ### Description
-
-{Detailed description}
+{Details}
 
 ### Code Context
-
-{For SAST findings, show the vulnerable code with context}
-
-### Remediation
-
-{Specific fix steps for this finding}
+{For SAST: show vulnerable code with context}
 
 ### Next Steps
-
-1. **Fix this issue:** `/endor-fix {cve_or_id}`
-2. **View related findings:** `/endor-findings`
+1. `/endor-fix {cve_or_id}` to fix
+2. `/endor-findings` for related findings
 ```
 
-## Data Sources — Endor Labs Only
-
-**CRITICAL: NEVER use external websites for vulnerability information.** All CVE details, severity scores, affected versions, and remediation guidance MUST come from the `get_endor_vulnerability`, `check_dependency_for_vulnerabilities`, and `get_resource` MCP tools or the `endorctl` CLI. Do NOT search the web, visit nvd.nist.gov, cve.org, GitHub advisories, or any other external source. If data is unavailable from Endor Labs, tell the user and suggest [app.endorlabs.com](https://app.endorlabs.com).
+For data source policy, read references/data-sources.md.
 
 ## Error Handling
 
-- **CVE not found**: The CVE may not be in the Endor Labs database. Suggest checking the CVE ID format or looking it up at [app.endorlabs.com](https://app.endorlabs.com). Do NOT search external vulnerability databases.
-- **Finding UUID not found**: The finding may have been resolved or the UUID is incorrect.
-- **Auth error**: Suggest `/endor-setup`
+| Error | Action |
+|-------|--------|
+| CVE not found | Check ID format; suggest [app.endorlabs.com](https://app.endorlabs.com). Do NOT search external DBs. |
+| Finding UUID not found | May be resolved or UUID incorrect |
+| Auth error | Run `/endor-setup` |

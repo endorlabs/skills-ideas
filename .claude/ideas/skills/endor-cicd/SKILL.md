@@ -9,11 +9,6 @@ description: |
 
 Generate CI/CD security scanning configurations for your preferred platform.
 
-## Prerequisites
-
-- Endor Labs account configured (run `/endor-setup` if not)
-- Access to your CI/CD platform configuration
-
 ## Supported Platforms
 
 | Platform | Config File |
@@ -29,22 +24,11 @@ Generate CI/CD security scanning configurations for your preferred platform.
 
 ### Step 1: Detect Platform
 
-Check for existing CI/CD configuration files:
-
-```
-.github/workflows/ -> GitHub Actions
-.gitlab-ci.yml -> GitLab CI
-Jenkinsfile -> Jenkins
-azure-pipelines.yml -> Azure DevOps
-bitbucket-pipelines.yml -> Bitbucket Pipelines
-.circleci/config.yml -> CircleCI
-```
-
-If multiple are detected or none found, ask the user which platform to use.
+Check for existing CI/CD config files. If multiple detected or none found, ask the user.
 
 ### Step 2: Detect Project Settings
 
-- Programming languages (from manifest files)
+- Languages (from manifest files)
 - Build commands (from existing CI config or package.json scripts)
 - ENDOR_NAMESPACE (from environment or ask user)
 
@@ -196,43 +180,30 @@ endor-security:
 
 ### Step 4: Setup Instructions
 
-After generating the configuration, provide setup steps:
+After generating, provide:
 
-```markdown
-## Setup Instructions
+#### Required Secrets
 
-### 1. Add Secrets
+| Secret | Description |
+|--------|-------------|
+| `ENDOR_NAMESPACE` | Organization identifier |
+| `ENDOR_API_CREDENTIALS_KEY` | API key for auth |
+| `ENDOR_API_CREDENTIALS_SECRET` | API secret for auth |
 
-Add the following secrets to your CI/CD platform:
+Never hardcode these in config files.
 
-| Secret | Value | Description |
-|--------|-------|-------------|
-| `ENDOR_NAMESPACE` | Your Endor Labs namespace | Organization identifier |
-| `ENDOR_API_CREDENTIALS_KEY` | API key | For authentication |
-| `ENDOR_API_CREDENTIALS_SECRET` | API secret | For authentication |
+#### Next Steps
 
-**Important:** Never hardcode these values in configuration files.
+1. Add secrets to CI/CD platform
+2. Commit configuration file
+3. Push test commit or open PR to verify
+4. `/endor-policy` to add policy gates blocking PRs with critical issues
 
-### 2. Add Configuration
-
-{Instructions specific to the platform}
-
-### 3. Verify
-
-Push a test commit or open a PR to verify the scan runs successfully.
-
-### Next Steps
-
-1. **Add policy gates:** `/endor-policy` to block PRs with critical issues
-2. **Generate SBOM:** Already included for main branch builds
-3. **View findings:** Results appear in Endor Labs dashboard
-```
-
-## Data Sources — Endor Labs Only
-
-**CRITICAL: NEVER use external websites for CI/CD configuration examples or security pipeline guidance.** All pipeline templates MUST be based on Endor Labs documentation and the `endorctl` CLI. Do NOT search the web for pipeline examples. If additional guidance is needed, suggest [docs.endorlabs.com](https://docs.endorlabs.com).
+For data source policy, read references/data-sources.md.
 
 ## Error Handling
 
-- **No CI/CD detected**: Ask the user which platform they use
-- **Existing config**: Suggest adding the security stage alongside existing config rather than overwriting
+| Error | Action |
+|-------|--------|
+| No CI/CD detected | Ask which platform to use |
+| Existing config | Append security stage alongside existing config, do not overwrite |

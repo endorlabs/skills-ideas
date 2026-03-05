@@ -7,37 +7,30 @@ description: |
 
 # Endor Labs Remediation Guide
 
-Help users fix security vulnerabilities by finding safe upgrade paths and providing step-by-step remediation.
-
-## Prerequisites
-
-- Endor Labs MCP server configured (run `/endor-setup` if not)
+Help users fix security vulnerabilities with safe upgrade paths and step-by-step remediation.
 
 ## Input Parsing
 
-The user can provide the text from the finding that was relayed to them (perhaps, through a ticket), or at least one of the following:
-
-1. **CVE ID** - e.g., `CVE-2021-23337`
-2. **Package name** - e.g., `lodash`
+The user may provide finding text (e.g., from a ticket) or at least one of:
+1. **CVE ID** — e.g., `CVE-2021-23337`
+2. **Package name** — e.g., `lodash`
 3. **Finding UUID**
 
 ## Workflow
 
 ### Step 1: Identify the Finding
-If the user provided a finding UUID:
-1. Use `get_resource` MCP tool with `resource_type: Finding` and the UUID
-2. If you were able to find the finding, proceed to Step 2. Otherwise continue in Step 1.
 
-If the user provided a CVE ID or package name:
-1. Check for a finding in the Endor Labs platform. Use the `/endor-api` skill to look at the `Finding` resource with the appropriate filter based on what the user provided. If the `/endor-api` skill is not available, continue.
-2. If you were able to find the finding, proceed to Step 2. Otherwise continue in Step 1.
+**If Finding UUID provided:** Use `get_resource` MCP tool with `resource_type: Finding` and the UUID. If found, go to Step 2.
 
-If the user provided a package name and a finding wasn't found, use the `/endor-check` skill in lieu of this skill.
+**If CVE ID or package name provided:** Use `/endor-api` skill to query `Finding` resource with appropriate filter. If found, go to Step 2.
 
-If no vulnerability / finding has been found, update the user. Indicate whether this is because they are already at a recommended version.
+**If package name provided but no finding found:** Use `/endor-check` skill instead.
 
-### Step 2: Find Upgrade Impact Analysis for Finding
-Use the `/endor-upgrade-impact` skill to determine if there is a pre-computed safe upgrade recommendation. If there is a recommendation, proceed to Step 4. If the skill is not available or if there is no recommendation from following the `/endor-upgrade-impact` skill, then use the `/endor-check` skill in lieu of this skill.
+**If no finding found:** Inform user. Indicate whether they are already at a recommended version.
+
+### Step 2: Find Upgrade Recommendation
+
+Use `/endor-upgrade-impact` skill for pre-computed safe upgrade recommendations. If a recommendation exists, go to Step 3. If unavailable or no recommendation, use `/endor-check` skill instead.
 
 ### Step 3: Present Remediation
 
@@ -52,38 +45,17 @@ Use the `/endor-upgrade-impact` skill to determine if there is a pre-computed sa
 | Severity | {severity} |
 | Package | {package}@{current_version} |
 | Description | {description} |
-| Reachable | {yes/no} |
-
-**Note:** The `Reachable` value is only known if a finding is found in Step 1.
+| Reachable | {yes/no — only known if finding found in Step 1} |
 
 ### Fix
 
 **Recommended upgrade:** {package}@{current} -> {package}@{safe_version}
-
 **Upgrade type:** {Patch/Minor/Major}
+```
 
-~~~bash
-# npm
-npm install {package}@{safe_version}
+For install commands, read `references/install-commands.md`.
 
-# yarn
-yarn add {package}@{safe_version}
-
-# pip
-pip install {package}=={safe_version}
-
-# go
-go get {package}@v{safe_version}
-~~~
-
-### All Safe Versions
-
-| Version | Type | Vulnerabilities | Notes |
-|---------|------|-----------------|-------|
-| {v1} | Patch | 0 | Recommended |
-| {v2} | Minor | 0 | New features |
-| {v3} | Major | 0 | Breaking changes possible |
-
+```markdown
 ### Additional Fixes Needed
 
 {If multiple CVEs affect this package, list them all and whether the recommended version fixes them}
@@ -91,27 +63,18 @@ go get {package}@v{safe_version}
 
 ### Step 4: Offer to Apply Fix
 
-Ask the user if they want you to apply the fix:
-
-1. Update the dependency (or parent dependency, in the case of a transitive dependency vulnerability) in the manifest file
+Ask the user if they want you to:
+1. Update the dependency (or parent dependency for transitive vulnerabilities) in the manifest file
 2. Run the package manager install command
 
-## Data Sources — Endor Labs Only
+For data source policy, read `references/data-sources.md`.
 
-1. MCP tools (preferred): `check_dependency_for_vulnerabilities`, `get_endor_vulnerability`, `get_resource`
-2. CLI fallback: `npx -y endorctl api list --resource Finding -n $ENDOR_NAMESPACE 2>/dev/null`
-
-**CRITICAL: NEVER use external websites for remediation or upgrade information.** Do NOT search the web, visit package registries, GitHub release pages, changelogs, vulnerability databases (nvd.nist.gov, cve.org, osv.dev, snyk.io), or any other external source. All fix versions and remediation guidance MUST come from Endor Labs. If data is unavailable, tell the user and suggest [app.endorlabs.com](https://app.endorlabs.com).
-
-**Important CLI parsing notes:**
-- Always use `2>/dev/null` when piping CLI output to a JSON parser (stderr contains progress messages)
-- `spec.remediation` is a **plain string** (e.g., `"Update project to use django version 4.2.15 (current: 4.2, latest: 6.0.2)."`), NOT a nested object. Parse the version from this string.
-- `spec.target_dependency_package_name` includes ecosystem prefix (e.g., `pypi://django@4.2`). Strip the prefix for display.
-- CVE/GHSA ID is in `spec.extra_key` or `spec.finding_metadata.vulnerability.meta.name`
-- CVSS score is at `spec.finding_metadata.vulnerability.spec.cvss_v3_severity.score`
+For CLI field paths and parsing gotchas, read `references/cli-parsing.md`.
 
 ## Error Handling
 
-- **No fix available**: Some vulnerabilities have no patched version. Suggest mitigation strategies (WAF rules, input validation, etc.)
-- **Package not found**: Check package name and ecosystem
-- **Auth error**: Suggest `/endor-setup`
+| Error | Action |
+|-------|--------|
+| No fix available | Suggest mitigation strategies (WAF rules, input validation, etc.) |
+| Package not found | Check package name and ecosystem |
+| Auth error | Suggest `/endor-setup` |

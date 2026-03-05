@@ -9,11 +9,6 @@ description: |
 
 Manage Software Bill of Materials - export, import, analyze, and compare.
 
-## Prerequisites
-
-- Endor Labs MCP server configured (run `/endor-setup` if not)
-- Node.js v18+ with `npx` available (for CLI operations)
-
 ## Supported Actions
 
 | Action | Description |
@@ -28,161 +23,49 @@ Manage Software Bill of Materials - export, import, analyze, and compare.
 
 ### Action: Export
 
-#### Step 1: Get Project UUID
-
-Use the `get_resource` MCP tool to find the project:
-- `resource_type`: `Project`
-- `name`: The project/repository name
-
-If the project hasn't been scanned yet, suggest running `/endor-scan` first.
-
-#### Step 2: Export SBOM
-
+1. Use `get_resource` MCP tool (`resource_type`: `Project`, `name`: project/repo name) to get UUID. If not found, suggest `/endor-scan` first.
+2. Export SBOM:
 ```bash
-# CycloneDX format (recommended)
+# CycloneDX (recommended)
 npx -y endorctl sbom export --project-uuid {uuid} --format cyclonedx --output sbom-cyclonedx.json
 
-# SPDX format
+# SPDX
 npx -y endorctl sbom export --project-uuid {uuid} --format spdx --output sbom-spdx.json
 ```
-
-#### Step 3: Present Summary
-
-```markdown
-## SBOM Export Complete
-
-**Format:** {CycloneDX/SPDX}
-**File:** {output_path}
-**Project:** {project_name}
-
-### Component Summary
-
-| Type | Count |
-|------|-------|
-| Libraries | {n} |
-| Frameworks | {n} |
-| Applications | {n} |
-| Total Components | {n} |
-
-### Top-Level Dependencies
-
-| Package | Version | License |
-|---------|---------|---------|
-| {pkg1} | {v1} | MIT |
-| {pkg2} | {v2} | Apache-2.0 |
-
-### Compliance
-
-| Requirement | Status |
-|-------------|--------|
-| NTIA Minimum Elements | {Pass/Fail} |
-| Component names | {Pass/Fail} |
-| Component versions | {Pass/Fail} |
-| Unique identifiers | {Pass/Fail} |
-| Dependency relationships | {Pass/Fail} |
-| Author information | {Pass/Fail} |
-| Timestamp | {Pass/Fail} |
-```
+3. Present summary with: format, file path, project name, component counts by type (Libraries/Frameworks/Applications/Total), top-level dependencies with versions and licenses, NTIA compliance checks (component names, versions, unique IDs, dependency relationships, author info, timestamp).
 
 ### Action: Analyze
 
-Analyze the current project's component inventory:
-
 1. Run `/endor-scan` if not already scanned
 2. Query findings and dependencies
-3. Present component breakdown with vulnerability and license status
-
-```markdown
-## SBOM Analysis
-
-### Component Inventory
-
-| Category | Count | With Vulns | License Risk |
-|----------|-------|------------|--------------|
-| Direct dependencies | {n} | {n} | {n} |
-| Transitive dependencies | {n} | {n} | {n} |
-| Dev dependencies | {n} | {n} | {n} |
-
-### Vulnerability Coverage
-
-- **Components with known CVEs:** {n}/{total}
-- **Critical/High CVEs:** {n}
-- **Reachable CVEs:** {n}
-
-### License Distribution
-
-| License | Count | Risk |
-|---------|-------|------|
-| MIT | {n} | Low |
-| Apache-2.0 | {n} | Low |
-| GPL-3.0 | {n} | High |
-```
+3. Present component breakdown:
+   - Counts by category (direct/transitive/dev) with vuln and license risk counts
+   - Vulnerability coverage: components with CVEs, critical/high count, reachable count
+   - License distribution with risk levels
 
 ### Action: Compare
 
-Compare two SBOMs for drift detection:
-
-```markdown
-## SBOM Comparison
-
-**Base:** {sbom1_name}
-**Current:** {sbom2_name}
-
-### Changes
-
-| Change | Package | Base Version | Current Version |
-|--------|---------|-------------|-----------------|
-| Added | {pkg} | - | {v} |
-| Removed | {pkg} | {v} | - |
-| Updated | {pkg} | {v_old} | {v_new} |
-
-### Security Impact
-
-- **New vulnerabilities introduced:** {n}
-- **Vulnerabilities resolved:** {n}
-- **Net change:** {+/-n}
-
-### License Impact
-
-- **New license risks:** {n}
-- **License risks resolved:** {n}
-```
+Compare two SBOMs for drift detection. Present:
+- Added/removed/updated packages with versions
+- Security impact: new vulns introduced, vulns resolved, net change
+- License impact: new risks, resolved risks
 
 ### Action: Validate
 
-Validate an SBOM file against compliance standards:
-
-```markdown
-## SBOM Validation
-
-**File:** {path}
-**Format:** {detected format}
-**Valid:** {yes/no}
-
-### Compliance Checks
-
-| Check | Status | Details |
-|-------|--------|---------|
-| Format validity | {Pass/Fail} | {details} |
-| NTIA minimum elements | {Pass/Fail} | {details} |
-| Component completeness | {Pass/Fail} | {details} |
-| Dependency relationships | {Pass/Fail} | {details} |
-```
+Validate SBOM file against compliance standards. Check: format validity, NTIA minimum elements, component completeness, dependency relationships.
 
 ## Next Steps
 
-Always end with relevant next steps:
+1. `/endor-scan` - scan for vulnerabilities
+2. `/endor-license` - check license compliance
+3. `/endor-cicd` - automate SBOM generation
 
-1. **Scan for vulnerabilities:** `/endor-scan`
-2. **Check license compliance:** `/endor-license`
-3. **Generate CI/CD pipeline:** `/endor-cicd` to automate SBOM generation
-
-## Data Sources — Endor Labs Only
-
-**CRITICAL: NEVER use external websites for SBOM or dependency data.** All data MUST come from Endor Labs MCP tools or the `endorctl` CLI. Do NOT search the web or visit external sources. If data is unavailable, tell the user and suggest [app.endorlabs.com](https://app.endorlabs.com).
+For data source policy, read references/data-sources.md.
 
 ## Error Handling
 
-- **Project not found**: Run `/endor-scan` first to register the project
-- **Auth error**: Suggest `/endor-setup`
-- **Invalid SBOM format**: Show the validation errors and suggest corrections
+| Error | Action |
+|-------|--------|
+| Project not found | Run `/endor-scan` first |
+| Auth error | Run `/endor-setup` |
+| Invalid SBOM format | Show validation errors, suggest corrections |
