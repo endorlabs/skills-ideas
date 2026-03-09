@@ -11,7 +11,7 @@ Fast security scan of the current repository.
 
 ## Workflow
 
-### Step 1: Detect Repository Context
+### Step 1: Run Scan via CLI
 
 1. Determine **absolute path** to cwd (scan tool requires fully qualified paths)
 2. Detect languages via manifest files: `package.json`/`yarn.lock` (JS/TS), `go.mod`/`go.sum` (Go), `requirements.txt`/`pyproject.toml`/`setup.py` (Python), `pom.xml`/`build.gradle` (Java), `Cargo.toml` (Rust)
@@ -48,17 +48,17 @@ Never fabricate error diagnoses. Show exact errors and suggest `/endor-troublesh
 
 For each critical/high finding UUID, use `get_resource` MCP tool (`uuid`, `resource_type`: `Finding`).
 
-### Step 4: Interpret Reachability Tags
+### Step 2: Extract Findings Efficiently
 
 For reachability tag interpretation, read references/reachability-tags.md.
 
-### Step 5: Present Results
+### Step 3: Present Results
 
 Include: scanned path, detected languages, scan mode (Quick/Incremental PR), severity summary table.
 
 Top critical/high findings table: Package, CVE, Severity, Reachability, Description.
 
-### Priority Order
+### Reachability Tags Reference
 
 1. Critical vulns (reachable first)
 2. High vulns (reachable first)
@@ -76,7 +76,7 @@ Top critical/high findings table: Package, CVE, Severity, Reachability, Descript
 
 For data source policy, read references/data-sources.md.
 
-## Error Handling
+Only fall back to CLI if MCP is unavailable. Do NOT invent error diagnoses — show exact errors and suggest `/endor-troubleshoot`.
 
 Never fabricate error diagnoses. Show exact error messages.
 

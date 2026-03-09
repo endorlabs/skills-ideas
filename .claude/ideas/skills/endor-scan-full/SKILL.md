@@ -67,7 +67,7 @@ Use `scan` MCP tool:
 
 **CLI fallback** (only if MCP genuinely unavailable):
 ```bash
-npx -y endorctl scan --path $(pwd) --output-type summary -n <namespace>
+endorctl scan --path <ABSOLUTE_PATH> --dependencies --sast --secrets --output-type json 2>/dev/null > /tmp/endor-full.json
 ```
 
 On error, report exact error. Do not write cache on failure.
