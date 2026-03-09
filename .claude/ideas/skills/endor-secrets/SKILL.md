@@ -7,12 +7,6 @@ description: |
 
 # Endor Labs Secrets Scanner
 
-Scan your codebase for exposed secrets, credentials, and sensitive data.
-
-## Prerequisites
-
-- Endor Labs MCP server configured (run `/endor-setup` if not)
-
 ## Secret Types Detected
 
 | Type | Pattern | Risk |
@@ -34,95 +28,68 @@ Scan your codebase for exposed secrets, credentials, and sensitive data.
 
 ### Step 1: Run Secrets Scan
 
-Use the `scan` MCP tool with secrets-specific parameters:
-
-- `path`: The **absolute path** to the repository root (or specific directory)
+Use `scan` MCP tool:
+- `path`: absolute path to repo root (or specific directory)
 - `scan_types`: `["secrets"]`
 - `scan_options`: `{ "quick_scan": true }`
 
-The scan returns finding UUIDs. For each finding, use the `get_resource` MCP tool:
-- `uuid`: The finding UUID
-- `resource_type`: `Finding`
+For each finding UUID returned, use `get_resource` MCP tool with `resource_type`: `Finding`.
 
-If the MCP tool is not available, fall back to CLI:
-
+CLI fallback:
 ```bash
 npx -y endorctl scan --path $(pwd) --secrets --output-type summary
 ```
 
 ### Step 2: Present Results
 
+If secrets found, lead with:
+> **SECRETS DETECTED** - {count} exposed credentials found. Rotate immediately -- they may already be compromised if committed to version control.
+
 ```markdown
 ## Secrets Scan Results
 
-**Path:** {scanned path}
-**Secrets Found:** {count}
+**Path:** {scanned path} | **Secrets Found:** {count}
 
 ### Exposed Secrets
 
 | # | Type | File | Line | Risk |
 |---|------|------|------|------|
-| 1 | AWS Access Key | config/aws.js | 15 | Critical - Cloud compromise |
-| 2 | Database Password | .env | 3 | Critical - Data breach |
-| 3 | GitHub Token | scripts/deploy.sh | 42 | High - Repo access |
+| 1 | AWS Access Key | config/aws.js | 15 | Critical |
 
-### Detail: {Secret #1}
+### Detail: {Secret #N}
 
 **File:** {file_path}:{line}
 **Type:** {secret_type}
 **Risk:** {risk_description}
 
 **Immediate Actions:**
-1. **Rotate this secret immediately** - Generate a new key/token and revoke the old one
-2. **Remove from code** - Replace with environment variable reference
-3. **Check git history** - The secret may be in previous commits
+1. Rotate this secret immediately (generate new, revoke old)
+2. Replace with environment variable reference
+3. Check git history for prior commits
 
 **Secure Alternative:**
-```{language}
-// Before (INSECURE)
-const awsKey = "AKIA...";
-
-// After (SECURE)
-const awsKey = process.env.AWS_ACCESS_KEY_ID;
-```
+{Show before/after code replacing hardcoded secret with env var}
 
 ### Recommendations
 
-1. **Rotate all exposed secrets immediately**
-2. **Add sensitive files to .gitignore:**
-   ```
-   .env
-   .env.local
-   *.pem
-   *.key
-   credentials.json
-   ```
-3. **Use environment variables** for all secrets
-4. **Use a secrets manager** (AWS Secrets Manager, HashiCorp Vault, etc.)
-5. **Check git history** for previously committed secrets:
-   ```bash
-   git log --all --full-history -- "*.env"
-   ```
+1. Rotate all exposed secrets immediately
+2. Add to .gitignore: `.env`, `.env.local`, `*.pem`, `*.key`, `credentials.json`
+3. Use environment variables for all secrets
+4. Use a secrets manager (AWS Secrets Manager, HashiCorp Vault, etc.)
+5. Check git history: `git log --all --full-history -- "*.env"`
 
 ### Next Steps
 
-1. **Rotate secrets** listed above
-2. **Run full scan:** `/endor-scan` to check for other issues
-3. **Pre-PR check:** `/endor-review` before pushing changes
+- `/endor-scan` - Full scan for other issues
+- `/endor-review` - Pre-PR security check
 ```
 
-## Immediate Alert Format
-
-If secrets are found, present them with urgency:
-
-> **SECRETS DETECTED** - {count} exposed credentials found. These should be rotated immediately as they may already be compromised if committed to version control.
-
-## Data Sources — Endor Labs Only
-
-**CRITICAL: NEVER use external websites for secrets detection information.** All data MUST come from Endor Labs MCP tools or the `endorctl` CLI. Do NOT search the web or visit external sources. If data is unavailable, tell the user and suggest [app.endorlabs.com](https://app.endorlabs.com).
+For data source policy, read references/data-sources.md.
 
 ## Error Handling
 
-- **No secrets found**: Good news. Confirm the scan completed and suggest periodic re-scanning.
-- **Auth error**: Suggest `/endor-setup`
-- **MCP not available**: Suggest running `/endor-setup` to configure
+| Condition | Action |
+|-----------|--------|
+| No secrets found | Confirm scan completed; suggest periodic re-scanning |
+| Auth error | Suggest `/endor-setup` |
+| MCP not available | Suggest `/endor-setup` to configure |

@@ -7,150 +7,108 @@ description: |
 
 # Endor Labs Full Reachability Scan
 
-Full call graph analysis to identify which vulnerabilities are actually reachable (exploitable).
+Comprehensive security scan with full call graph analysis to identify exploitable vulnerabilities.
 
-## Prerequisites
+## Quick Scan vs Full Scan
 
-- Endor Labs MCP server configured (run `/endor-setup` if not), or `endorctl` CLI installed
-- Build tools installed for the project language
+| Feature | Quick Scan | Full Scan |
+|---------|-----------|-----------|
+| Speed | Seconds | Minutes |
+| Reachability | No | Full call graph |
+| Call Paths | No | Yes |
+| Prioritization | Severity only | Severity + reachability |
+| Use Case | Daily dev | Pre-release, security reviews |
 
-## CRITICAL: Scan Once, Reference Always
+## CRITICAL: Scan Once, Cache Always
 
-**Cache file:** `.endor/scan-full-results.json`
+**Cache file:** `.endor/scan-full-results.json` (relative to repo root)
 
-1. **Before scanning**, check if cache exists. If yes, use it (skip to presenting results) unless user explicitly asks to re-scan.
-2. **After scan**, save parsed results (NOT raw JSON) to cache.
-3. **Add `.endor/` to `.gitignore`**.
+Rules:
+1. **Before scanning**, check if cache exists. If yes, use cached results. Do not re-scan unless user explicitly requests it ("scan again", "re-scan", "run a new scan").
+2. **After successful scan**, save complete raw results to cache immediately. Create `.endor/` if needed.
+3. **On scan failure**, do not write cache. Report error.
+4. **For follow-up questions** about findings, read cache instead of re-scanning. If a finding UUID is missing from `finding_details`, fetch via `get_resource` and update cache.
+5. **Add `.endor/` to `.gitignore`** if not already present.
+
+### Cache Format
+
+```json
+{
+  "scan_timestamp": "ISO-8601",
+  "scan_path": "/absolute/path",
+  "scan_types": ["vulnerabilities", "dependencies", "secrets", "sast"],
+  "scan_options": { "quick_scan": false },
+  "raw_results": { ... },
+  "finding_details": { "uuid-1": { ... }, "uuid-2": { ... } }
+}
+```
 
 ## Workflow
 
 ### Step 1: Check Cache
 
-Check if `.endor/scan-full-results.json` exists. If yes, read and present cached results with timestamp.
+- **Cache exists**: Show timestamp, ask user to use cached or fresh scan. If cached, skip to Step 5.
+- **No cache**: Proceed with scan.
 
-### Step 2: Run Full Scan
+### Step 2: Detect Repository Context
 
-Use `--output-type summary` first for the user-visible progress, then extract JSON to a temp file:
+Detect languages and manifest files (same as `/endor-scan`).
 
+### Step 3: Warn About Duration
+
+> Full reachability analysis builds a call graph of your entire codebase. This typically takes 2-5 minutes depending on project size.
+
+### Step 4: Run Full Scan
+
+Use `scan` MCP tool:
+- `path`: **absolute path** to repository root
+- `scan_types`: `["vulnerabilities", "dependencies", "secrets", "sast"]`
+- `scan_options`: `{ "quick_scan": false }`
+
+**CLI fallback** (only if MCP genuinely unavailable):
 ```bash
 endorctl scan --path <ABSOLUTE_PATH> --dependencies --sast --secrets --output-type json 2>/dev/null > /tmp/endor-full.json
 ```
 
-If `endorctl` not found, try `npx -y endorctl`. If MCP `scan` tool is available, use it with `scan_options: { "quick_scan": false }`.
+On error, report exact error. Do not write cache on failure.
 
-**CRITICAL: The CLI JSON structure is `{ "all_findings": [...], "blocking_findings": [...], "warning_findings": [...] }`. Each finding has `spec` and `meta` keys.**
+After successful scan: save to cache, add `.endor/` to `.gitignore`, then fetch details for each finding UUID via `get_resource` (`resource_type`: `Finding`) and append to `finding_details` in cache.
 
-### Step 3: Parse and Cache in ONE Python Call
+### Step 5: Interpret Reachability and Present Results
 
-Do all parsing, classification, and caching in a single Python script. Do NOT make multiple passes over the data.
+For reachability tag interpretation, read references/reachability-tags.md.
 
-```bash
-python3 -c "
-import json, datetime
+#### Priority Classification
 
-with open('/tmp/endor-full.json', encoding='utf-8') as f:
-    data = json.load(f)
+| Priority | Dependency Tag | Function Tag | Action |
+|----------|---------------|--------------|--------|
+| **P0 - Fix Now** | REACHABLE_DEPENDENCY | REACHABLE_FUNCTION | Actively exploitable |
+| **P1 - Investigate** | REACHABLE_DEPENDENCY | POTENTIALLY_REACHABLE_FUNCTION | Likely exploitable, verify |
+| **P2 - Plan Fix** | REACHABLE_DEPENDENCY | UNREACHABLE_FUNCTION | Dep used, vuln func not called |
+| **P3 - Track** | UNREACHABLE_DEPENDENCY | UNREACHABLE_FUNCTION | Not used, lowest risk |
+| **P4 - Ignore** | (PHANTOM) | Any | Not installed |
 
-findings = data.get('all_findings', [])
-p0, p1, p2, p3, p4 = [], [], [], [], []
-counts = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0}
+When dep tag present but no function tag, classify on dep tag alone (function reachability unknown).
 
-for f in findings:
-    s = f.get('spec', {})
-    m = f.get('meta', {})
-    tags = s.get('finding_tags', [])
-    level = s.get('level', '')
-    desc = m.get('description', '')[:120]
-    remediation = s.get('remediation', '')[:150]
-    proposed = s.get('proposed_version', '')
-    fix = 'FINDING_TAGS_FIX_AVAILABLE' in tags
-    direct = 'FINDING_TAGS_DIRECT' in tags
-    eco = s.get('ecosystem', '')
-
-    if 'CRITICAL' in level: counts['critical'] += 1
-    elif 'HIGH' in level: counts['high'] += 1
-    elif 'MEDIUM' in level: counts['medium'] += 1
-    elif 'LOW' in level: counts['low'] += 1
-
-    entry = {'desc': desc, 'level': level, 'fix': fix, 'direct': direct,
-             'proposed': proposed, 'remediation': remediation, 'eco': eco,
-             'tags': [t for t in tags if 'REACHABLE' in t or t in (
-                 'FINDING_TAGS_DIRECT','FINDING_TAGS_TRANSITIVE',
-                 'FINDING_TAGS_FIX_AVAILABLE','FINDING_TAGS_UNFIXABLE','FINDING_TAGS_PHANTOM')]}
-
-    if 'FINDING_TAGS_PHANTOM' in tags:
-        p4.append(entry)
-    elif 'FINDING_TAGS_REACHABLE_DEPENDENCY' in tags and 'FINDING_TAGS_REACHABLE_FUNCTION' in tags:
-        p0.append(entry)
-    elif ('FINDING_TAGS_REACHABLE_DEPENDENCY' in tags or 'FINDING_TAGS_POTENTIALLY_REACHABLE_DEPENDENCY' in tags) and \
-         ('FINDING_TAGS_REACHABLE_FUNCTION' in tags or 'FINDING_TAGS_POTENTIALLY_REACHABLE_FUNCTION' in tags):
-        p1.append(entry)
-    elif 'FINDING_TAGS_REACHABLE_DEPENDENCY' in tags and 'FINDING_TAGS_UNREACHABLE_FUNCTION' in tags:
-        p2.append(entry)
-    elif 'FINDING_TAGS_POTENTIALLY_REACHABLE_DEPENDENCY' in tags:
-        p2.append(entry)
-    else:
-        p3.append(entry)
-
-sev = lambda x: 0 if 'CRITICAL' in x['level'] else 1 if 'HIGH' in x['level'] else 2 if 'MEDIUM' in x['level'] else 3
-for lst in [p0, p1, p2]: lst.sort(key=sev)
-
-result = {
-    'scan_timestamp': datetime.datetime.now().isoformat(),
-    'scan_path': '<ABSOLUTE_PATH>',
-    'counts': counts, 'total': len(findings),
-    'p0': p0, 'p1': p1, 'p2': p2[:15],
-    'p3_count': len(p3), 'p4_count': len(p4)
-}
-
-import os
-os.makedirs('<REPO_ROOT>/.endor', exist_ok=True)
-with open('<REPO_ROOT>/.endor/scan-full-results.json', 'w', encoding='utf-8') as f:
-    json.dump(result, f)
-
-print(json.dumps(result, indent=2))
-"
-```
-
-**This single script does everything:** reads JSON, classifies by reachability, sorts by severity, caches to disk, and outputs the parsed summary. No re-reading, no multiple passes.
-
-### Step 4: Present Results
-
-```markdown
-## Full Security Scan Complete
-
-**Path:** {path} | **Scan Type:** Full Reachability Analysis
-
-### Reachability Summary
-
-| Category | Count | Description |
-|----------|-------|-------------|
-| P0 — Reachable Function | {n} | Exploitable — fix now |
-| P1 — Potentially Reachable | {n} | Likely exploitable — investigate |
-| P2 — Unreachable Function | {n} | Dep used, vuln function not called |
-| P3 — Unreachable | {n} | Not used by your code |
-
-### P0 — Fix Now
-| Package | Advisory | Severity | Fix Version |
-|---------|----------|----------|-------------|
-| {from remediation} | {from desc} | {level} | {proposed} |
+Present: scanned path, languages, "Full Reachability Analysis", timestamp, reachability summary table with counts per category, key insight ("X of Y vulns have confirmed reachable call path"), then P0-P3 finding tables (Package, Advisory, Severity, Description).
 
 ### Next Steps
-1. `/endor-fix {advisory}` — Fix reachable issues
-2. `/endor-upgrade {package}` — Check upgrade impact
-3. `/endor-explain {advisory}` — Vulnerability details
-```
 
-### Reachability Tags Reference
+1. `/endor-fix {top-advisory}` - fix reachable critical
+2. `/endor-explain {advisory}` - explain a finding
+3. `/endor-findings reachable` - view all findings
+4. `/endor-upgrade {package}` - upgrade with impact analysis
 
-- **Dependency:** `REACHABLE_DEPENDENCY` / `UNREACHABLE_DEPENDENCY` / `POTENTIALLY_REACHABLE_DEPENDENCY`
-- **Function:** `REACHABLE_FUNCTION` / `UNREACHABLE_FUNCTION` / `POTENTIALLY_REACHABLE_FUNCTION`
-- **P0:** Reachable dep + Reachable function (exploitable)
-- **P1:** Reachable/potentially reachable dep + potentially reachable function
-- **P2:** Reachable dep + unreachable function
-- **P3:** Unreachable dep (lowest risk)
-- **P4:** PHANTOM (not installed)
+For data source policy, read references/data-sources.md.
 
-## Data Sources — Endor Labs Only
+## Error Handling
 
-**NEVER use external websites for vulnerability information.** All data must come from Endor Labs tools. If unavailable, suggest [app.endorlabs.com](https://app.endorlabs.com).
+Never fabricate error diagnoses. Show exact error messages.
+
+| Error | Action |
+|-------|--------|
+| Auth error | Complete browser login, retry. If persistent, `/endor-setup` |
+| Build fails | Fix build errors first, or use `/endor-scan` (no build required) |
+| Timeout | Scan specific subdirectory |
+| MCP unavailable | `/endor-setup`. CLI fallback only if user confirms |
+| Unknown error | Show exact error, suggest `/endor-troubleshoot` |

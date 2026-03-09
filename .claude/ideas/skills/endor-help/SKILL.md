@@ -7,10 +7,6 @@ description: |
 
 # Endor Labs Command Reference
 
-Display a comprehensive reference of all available Endor Labs commands.
-
-## Output
-
 Present this reference to the user:
 
 ```markdown
@@ -19,72 +15,63 @@ Present this reference to the user:
 ### Getting Started
 | Command | Description |
 |---------|-------------|
-| `/endor` | Main assistant - describe what you need in natural language |
-| `/endor-setup` | First-time setup wizard (install, auth, configure) |
-| `/endor-demo` | Try Endor Labs without an account |
-| `/endor-help` | This command reference |
+| `/endor` | Natural language assistant |
+| `/endor-setup` | First-time setup (install, auth, configure) |
+| `/endor-demo` | Try without an account |
+| `/endor-help` | This reference |
 
 ### Scanning
 | Command | Description |
 |---------|-------------|
 | `/endor-scan` | Quick security scan (seconds) |
-| `/endor-scan-full` | Full scan with reachability analysis (minutes) |
-| `/endor-sca` | Scan dependencies for known vulnerabilities (SCA) |
+| `/endor-scan-full` | Full scan with reachability (minutes) |
+| `/endor-sca` | Dependency vulnerability scan (SCA) |
 | `/endor-sast` | Static application security testing |
-| `/endor-secrets` | Scan for exposed secrets and credentials |
+| `/endor-secrets` | Scan for exposed secrets |
 | `/endor-container` | Scan container images and Dockerfiles |
 
 ### Dependency Analysis
 | Command | Description |
 |---------|-------------|
-| `/endor-check <package>` | Check a dependency for vulnerabilities |
-| `/endor-score <package>` | View package health scores |
-| `/endor-upgrade <package>` | Analyze upgrade impact (breaking changes) |
+| `/endor-check <pkg>` | Check dependency for vulnerabilities |
+| `/endor-score <pkg>` | View package health scores |
+| `/endor-upgrade <pkg>` | Analyze upgrade impact |
 | `/endor-license` | Check license compliance |
 
 ### Findings & Remediation
 | Command | Description |
 |---------|-------------|
-| `/endor-findings` | View security findings with filters |
-| `/endor-fix <CVE>` | Get remediation guidance for a vulnerability |
-| `/endor-explain <CVE>` | Get detailed CVE or finding information |
-| `/endor-troubleshoot` | Diagnose scan errors and get resolution guidance |
+| `/endor-findings` | View findings with filters |
+| `/endor-fix <CVE>` | Remediation guidance |
+| `/endor-explain <CVE>` | Detailed CVE/finding info |
+| `/endor-troubleshoot` | Diagnose scan errors |
 
 ### Compliance & Governance
 | Command | Description |
 |---------|-------------|
 | `/endor-review` | Pre-PR security review |
-| `/endor-sbom` | Software Bill of Materials management |
+| `/endor-sbom` | SBOM management |
 | `/endor-policy` | Security policy management |
-| `/endor-cicd` | Generate CI/CD security pipelines |
+| `/endor-cicd` | Generate CI/CD pipelines |
 
 ### Advanced
 | Command | Description |
 |---------|-------------|
-| `/endor-api` | Execute custom API queries |
+| `/endor-api` | Custom API queries |
 
-### Examples
-
+### Quick Examples
 ```
-/endor-scan                          # Quick scan current repo
-/endor-check lodash 4.17.15         # Check specific version
-/endor-fix CVE-2021-23337           # Fix a vulnerability
-/endor-score express                 # Evaluate a package
-/endor-upgrade lodash 4.17.21       # Check upgrade impact
+/endor-scan                          # Quick scan
+/endor-check lodash 4.17.15         # Check version
+/endor-fix CVE-2021-23337           # Fix a vuln
 /endor-findings critical reachable  # Filter findings
-/endor-review                        # Pre-PR security check
-/endor-troubleshoot                  # Diagnose scan errors
+/endor-review                        # Pre-PR check
 ```
 
 ### Tips
-
-- Start with `/endor-scan` for a quick security overview
-- Use `/endor-scan-full` before releases for comprehensive analysis
-- Run `/endor-review` before creating pull requests
-- Check `/endor-score` before adding new dependencies
-- Use `/endor-troubleshoot` when a scan fails to diagnose the issue
+- `/endor-scan` for quick overview, `/endor-scan-full` before releases
+- `/endor-review` before PRs, `/endor-score` before adding deps
+- `/endor-troubleshoot` when scans fail
 ```
 
-## Contextual Help
-
-If the user asks about a specific command, provide detailed usage for that command rather than the full reference.
+If the user asks about a specific command, provide detailed usage for that command only.

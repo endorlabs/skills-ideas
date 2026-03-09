@@ -7,41 +7,35 @@ description: |
 
 # Endor Labs Demo Mode
 
-Demonstrate Endor Labs capabilities using simulated data. This lets users experience the workflow without requiring an account.
+Demonstrate Endor Labs capabilities using simulated data when no account is available.
 
 ## When to Use
 
-- User wants to try Endor Labs before signing up
-- MCP server is not configured
-- Authentication is not available
+- User wants to try before signing up
+- MCP server not configured or auth unavailable
 - User explicitly asks for a demo
 
-## Demo Workflow
+## Workflow
 
-### 1. Welcome Message
+### 1. Welcome
 
-Tell the user:
-
-> This is a demo of Endor Labs security scanning. I'll simulate a scan of your repository to show what Endor Labs can do. For real results, run `/endor-setup` to connect your account.
+Tell user: This is a demo with simulated data. For real results, run `/endor-setup`.
 
 ### 2. Detect Project Info
 
-Read the current directory to gather real project context:
-
-- Check for dependency manifest files (package.json, go.mod, requirements.txt, pom.xml, Cargo.toml, etc.)
-- Detect programming languages present
-- Count source files
+Read current directory for real project context:
+- Dependency manifests (package.json, go.mod, requirements.txt, pom.xml, Cargo.toml, etc.)
+- Languages present
+- Source file count
 
 ### 3. Simulated Scan Results
 
-Present simulated but realistic results based on the detected project type. Use this format:
+Present realistic results tailored to detected project type:
 
 ```markdown
 ## Demo Scan Results (Simulated)
 
-**Project:** {detected project name}
-**Languages:** {detected languages}
-**Dependencies:** {estimated count from manifest}
+**Project:** {name} | **Languages:** {detected} | **Dependencies:** {count}
 
 ### Vulnerability Summary
 
@@ -52,25 +46,16 @@ Present simulated but realistic results based on the detected project type. Use 
 | Medium | 12 | 3 | Plan remediation |
 | Low | 8 | 0 | Track as debt |
 
-### Top Reachable Vulnerabilities (Simulated)
-
-| Package | CVE | Severity | Description |
-|---------|-----|----------|-------------|
-| {relevant-pkg} | CVE-2024-XXXXX | Critical | Prototype Pollution |
-| {relevant-pkg} | CVE-2024-XXXXX | High | Remote Code Execution |
-
 ### What Endor Labs Provides
 
-1. **Reachability Analysis** - Only 6 of 27 vulnerabilities are actually reachable in your code
+1. **Reachability Analysis** - Only 6 of 27 vulns are actually reachable
 2. **Call Path Visualization** - See exactly how vulnerable code is called
 3. **Prioritized Remediation** - Fix what matters first
 4. **Upgrade Impact Analysis** - Predict breaking changes before upgrading
 5. **Package Health Scores** - Evaluate packages before adoption
 ```
 
-### 4. Demo Feature Showcase
-
-Briefly demonstrate what each command does:
+### 4. Feature Showcase
 
 - `/endor-scan` - Quick scan in seconds
 - `/endor-scan-full` - Deep analysis with call graphs
@@ -81,13 +66,11 @@ Briefly demonstrate what each command does:
 
 ### 5. Call to Action
 
-End with:
+End with: Ready for real results? Run `/endor-setup` or visit https://www.endorlabs.com to sign up free.
 
-> Ready to get real results? Run `/endor-setup` to connect your Endor Labs account, or visit https://www.endorlabs.com to sign up for free.
+## Rules
 
-## Important Notes
-
-- Clearly label all output as **simulated/demo** data
-- Use realistic but obviously fake CVE numbers (e.g., CVE-2024-XXXXX)
-- Tailor simulated packages to the actual project type detected
-- Never present simulated data as real scan results
+- Clearly label ALL output as **simulated/demo** data
+- Use obviously fake CVE numbers (e.g., CVE-2024-XXXXX)
+- Tailor simulated packages to detected project type
+- Never present simulated data as real results

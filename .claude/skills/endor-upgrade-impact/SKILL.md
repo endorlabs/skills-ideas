@@ -7,7 +7,7 @@ description: |
 
 # Endor Labs Upgrade Impact Analysis
 
-Find safe dependency upgrades with minimal risk. Uses pre-computed data — no scanning required.
+Find safe dependency upgrades that fix vulnerabilities with minimal risk. Uses pre-computed data from the Endor Labs platform -- no scanning required.
 
 ## Workflow
 
@@ -15,16 +15,17 @@ Find safe dependency upgrades with minimal risk. Uses pre-computed data — no s
 
 The project UUID is often available from a prior scan. Check `.endor/scan-full-results.json` or the scan output first.
 
-If not available, look it up. **IMPORTANT:** The project name in Endor Labs is typically the full git clone URL (e.g., `https://github.com/org/repo.git`), not just the repo name. Use the UUID from prior scan output if available — it was printed in the scan's INFO lines as `Scanning Project UUID: <uuid>`.
-
-If you must query:
 ```bash
 endorctl api list --resource Project -n <NAMESPACE> --filter "uuid==\"<PROJECT_UUID>\"" --field-mask="uuid,meta.name" 2>/dev/null
 ```
 
+Or use `get_resource` MCP tool with `resource_type: Project` and `name: {repo_name}`.
+
+If not found, inform the user and stop.
+
 ### Step 2: Get Best Upgrade Recommendations
 
-Query all recommended upgrades in a **single call**:
+Query pre-computed safe upgrades. **Do NOT run a scan.**
 
 ```bash
 endorctl api list -r VersionUpgrade -n <NAMESPACE> \
@@ -33,39 +34,45 @@ endorctl api list -r VersionUpgrade -n <NAMESPACE> \
   --list-all 2>/dev/null
 ```
 
-**Pipe through Python to extract only what's needed** — do NOT dump raw API JSON into context:
-
-```bash
-... | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-seen = set()
-for o in data.get('list', {}).get('objects', []):
-    ui = o['spec']['upgrade_info']
-    pkg = ui.get('direct_dependency_package', '')
-    key = f\"{pkg}|{ui.get('from_version')}|{ui.get('to_version')}\"
-    if key in seen: continue
-    seen.add(key)
-    print(f\"{pkg}|{ui['from_version']}|{ui['to_version']}|fixed={ui['total_findings_fixed']}|introduced={ui.get('total_findings_introduced',0)}|risk={ui['upgrade_risk']}|best={ui['is_best']}|{ui.get('score_explanation','')}\" )
-"
-```
+If user asked about a **specific package**, filter results to it. If general ("what should I upgrade?"), present all.
 
 ### Step 3: Present Results
+
+Pick the best upgrade per package: most `total_findings_fixed` with lowest `upgrade_risk`.
 
 ```markdown
 ## Upgrade Impact Analysis
 
-| Package | From | To | Fixed | Introduced | Risk | Breaking Changes? |
-|---------|------|----|-------|------------|------|-------------------|
-| {pkg} | {from} | {to} | {fixed} | {introduced} | {risk} | {explanation} |
+**Project:** {project_name}
+
+### Recommended Upgrades
+
+| Package | From | To | Findings Fixed | Risk | Best? | Latest? |
+|---------|------|----|---------------|------|-------|---------|
+| {direct_dependency_package} | {from_version} | {to_version} | {total_findings_fixed} | {upgrade_risk} | {is_best} | {is_latest} |
+
+### {package}: {from_version} -> {to_version}
+
+| Metric | Value |
+|--------|-------|
+| Findings Fixed | {total_findings_fixed} |
+| Findings Introduced | {total_findings_introduced} |
+| Upgrade Risk | {upgrade_risk} |
+| Target Version Age | {to_version_age_in_days} days |
+| Score Explanation | {score_explanation} |
 
 ### Recommendation
-- **LOW risk**: Safe to upgrade
-- **MEDIUM risk**: No breaking changes detected, but review and test
-- **HIGH risk**: Breaking code-level changes detected — run Step 4
+
+- **LOW risk**: Safe to upgrade.
+- **MEDIUM risk**: Review changes carefully. Test thoroughly before deploying.
+- **HIGH risk**: Breaking code-level changes detected. See detailed CIA below.
 ```
 
-### Step 4: High-Risk CIA Details (On Request Only)
+For install commands, read `references/install-commands.md`.
+
+### Step 4: Evaluate High-Risk Upgrades (On Request Only)
+
+Fetch CIA details only if user wants to evaluate a high-risk upgrade:
 
 Only fetch if user asks about a HIGH risk upgrade:
 ```bash
@@ -74,18 +81,20 @@ endorctl api list -r VersionUpgrade -n <NAMESPACE> \
   --field-mask="spec.upgrade_info.cia_results" 2>/dev/null
 ```
 
+Present CIA results: API changes, removed functions, signature changes, behavioral changes. Include action items and recommendation on whether to proceed.
+
 ## Key Concepts
 
-- **is_best**: Best balance of fixes vs. risk
+- **is_best** / **worth_it**: Endor Labs' recommended upgrade with best fixes-vs-risk balance
 - **upgrade_risk**: LOW (auto-upgrade safe), MEDIUM (review needed), HIGH (breaking changes via call graphs)
-- **total_findings_fixed/introduced**: Vulns resolved/added by upgrading
+- **cia_results**: Code-level breaking changes for high-risk upgrades (fetched on demand)
+
+For data source policy, read `references/data-sources.md`.
 
 ## Error Handling
 
-- **License error**: Upgrade Impact requires Endor Labs OSS Pro license
-- **Package not in results**: No recommended upgrades exist, or already at recommended version
-- **Auth error**: Suggest `/endor-setup`
-
-## Data Sources — Endor Labs Only
-
-**NEVER use external websites.** All data must come from Endor Labs API/CLI. If unavailable, suggest [app.endorlabs.com](https://app.endorlabs.com).
+| Error | Action |
+|-------|--------|
+| License/permission error | "Upgrade Impact Analysis requires **Endor Labs OSS Pro** license. Visit [app.endorlabs.com](https://app.endorlabs.com) or contact your admin." |
+| Package not in results | No recommended upgrades, or already at recommended version |
+| Auth error | Suggest `/endor-setup` |

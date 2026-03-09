@@ -7,196 +7,111 @@ description: |
 
 # Endor Labs Pre-PR Security Review
 
-Comprehensive security review of your changes before creating a pull request.
-
-## Prerequisites
-
-- Endor Labs MCP server configured (run `/endor-setup` if not)
-- Git repository with uncommitted or committed changes
+Comprehensive security review of changes before creating a pull request.
 
 ## Workflow
 
 ### Step 1: Gather Changes and Run PR Scan
 
-Identify what has changed and run an incremental scan focused on the PR diff:
-
 ```bash
-# Get changed files (staged + unstaged)
-git diff --name-only HEAD
-
-# Get diff for analysis
-git diff HEAD
-
-# If comparing branches
-git diff main...HEAD --name-only
+git diff --name-only HEAD          # Changed files (staged + unstaged)
+git diff HEAD                      # Full diff
+git diff main...HEAD --name-only   # Branch comparison
 ```
 
-Categorize changed files:
-- **Dependency files**: package.json, go.mod, requirements.txt, pom.xml, etc.
-- **Source code files**: .js, .ts, .py, .go, .java, etc.
-- **Config files**: .env, docker-compose.yml, Dockerfile, etc.
-- **CI/CD files**: .github/workflows/*, Jenkinsfile, etc.
+Categorize changed files into: dependency manifests, source code, config files, CI/CD files.
 
-**Run an incremental PR scan** using the `scan` MCP tool. This only reports **new findings introduced by the PR**, not pre-existing issues in the codebase:
-
-- `path`: The **absolute path** to the repository root
+**Run incremental PR scan** using `scan` MCP tool:
+- `path`: absolute path to repo root
 - `scan_types`: `["vulnerabilities", "dependencies", "sast", "secrets"]`
 - `scan_options`: `{ "pr_incremental": true }`
 
-This is the preferred approach for PR reviews — it compares against the baseline and only surfaces findings introduced by the current changes, making the review focused and actionable.
-
-If the incremental scan is not available or fails, fall back to individual checks below.
+This only reports **new findings introduced by the PR**, not pre-existing issues. Fall back to individual checks below if incremental scan unavailable.
 
 ### Step 2: Dependency Check
 
-If any dependency manifest files were modified:
-
-1. Parse the diff to find new or updated packages
-2. For each new/updated package, use `check_dependency_for_vulnerabilities` MCP tool
-3. Report any vulnerabilities found
+If dependency manifests modified:
+1. Parse diff for new/updated packages
+2. Use `check_dependency_for_vulnerabilities` MCP tool for each
+3. Report vulnerabilities found
 
 ### Step 3: SAST Analysis
 
-For modified source code files:
-
-1. Use the `scan` MCP tool with `scan_types: ["sast"]` on the repository (if not already covered by the PR scan in Step 1)
-2. Retrieve finding details with `get_resource` (resource_type: `Finding`)
-3. Read the affected source files to show code context
+For modified source files (if not covered by Step 1):
+1. Use `scan` MCP tool with `scan_types: ["sast"]`
+2. Retrieve details with `get_resource` (resource_type: `Finding`)
+3. Show code context from affected files
 
 ### Step 4: Secrets Detection
 
-Scan for secrets in the changes:
-
-1. Use the `scan` MCP tool with `scan_types: ["secrets"]` on the repository (if not already covered by the PR scan in Step 1)
-2. Also manually check the git diff for common secret patterns (API keys, tokens, passwords)
+If not covered by Step 1:
+1. Use `scan` MCP tool with `scan_types: ["secrets"]`
+2. Manually check git diff for common secret patterns
 3. Flag any exposed credentials
 
 ### Step 5: License Check
 
-For new dependencies:
-
-1. Check license of each new dependency
-2. Flag copyleft licenses (GPL, AGPL)
-3. Warn on unknown licenses
+For new dependencies: check license, flag copyleft (GPL, AGPL), warn on unknown.
 
 ### Step 6: Container Security (if applicable)
 
-If Dockerfile or docker-compose files were modified:
-
-1. Check for security best practices
-2. Flag running as root, latest tags, exposed ports
-3. Check for secrets in build args
+If Dockerfile/docker-compose modified: check for root user, latest tags, exposed ports, secrets in build args.
 
 ### Step 7: Present Security Review
 
 ```markdown
 ## Pre-PR Security Review
 
-**Branch:** {current_branch}
-**Files Changed:** {count}
-**Dependency Files Modified:** {yes/no}
-**Scan Mode:** {Incremental PR scan / Full scan fallback}
-
----
+**Branch:** {branch} | **Files Changed:** {count} | **Scan Mode:** {Incremental/Full fallback}
 
 ### 1. Dependency Check {PASS/WARN/BLOCK}
 
-{If dependencies changed:}
-
 | Package | Change | Version | Vulnerabilities | Status |
 |---------|--------|---------|-----------------|--------|
-| {pkg} | Added | {v} | 0 | PASS |
-| {pkg} | Updated | {old}->{new} | 2 (1 Critical) | BLOCK |
-
-{If no dependency changes:}
-No dependency files modified.
-
----
 
 ### 2. SAST Analysis {PASS/WARN/BLOCK}
 
 | File | Issues | Severity | Details |
 |------|--------|----------|---------|
-| {file} | 1 | Critical | SQL Injection at line {n} |
-| {file} | 2 | Medium | Information disclosure |
-
-{If no issues:}
-No SAST issues found in modified files.
-
----
 
 ### 3. Secrets Scan {PASS/BLOCK}
 
-{If secrets found:}
-**SECRETS DETECTED** - {count} exposed credentials found
-
 | Type | File | Line |
 |------|------|------|
-| API Key | {file} | {line} |
-
-{If clean:}
-No secrets detected in changes.
-
----
 
 ### 4. License Check {PASS/WARN/BLOCK}
 
-{If new dependencies:}
-
 | Package | License | Risk |
 |---------|---------|------|
-| {pkg} | MIT | Low |
-| {pkg} | GPL-3.0 | High |
-
-{If no new dependencies:}
-No new dependencies added.
-
----
 
 ### Verdict: {PASS / WARN / BLOCK}
-
-{Based on findings:}
 ```
 
 ### Security Gate Criteria
 
-**BLOCK** (must fix before merging):
-- Any critical vulnerability in new/updated dependencies
-- Any critical SAST finding (SQL injection, command injection)
-- Any exposed secrets
-- AGPL/SSPL licensed new dependencies in commercial projects
+| Verdict | Conditions |
+|---------|------------|
+| **BLOCK** | Critical vuln in new deps, critical SAST finding (SQLi, command injection), any exposed secrets, AGPL/SSPL deps |
+| **WARN** | High vulns (non-reachable), medium/low SAST findings, GPL deps |
+| **PASS** | No critical issues, no secrets, no blocking licenses |
 
-**WARN** (review recommended):
-- High severity vulnerabilities (non-reachable)
-- Medium/Low SAST findings
-- GPL dependencies (review with legal)
+### Step 8: Actionable Fixes
 
-**PASS** (safe to merge):
-- No critical issues
-- No secrets
-- No blocking license issues
-
-### Step 8: Provide Actionable Fixes
-
-For each blocking issue, provide a specific fix:
-
+For each blocking issue:
 ```markdown
 ### Required Fixes Before Merge
 
 1. **{Issue}** in {file}:{line}
    - **Fix:** {specific remediation}
    - **Command:** `/endor-fix {cve}` for details
-
-2. **{Issue}** in {file}:{line}
-   - **Fix:** {specific remediation}
 ```
 
-## Data Sources — Endor Labs Only
-
-**CRITICAL: NEVER use external websites for vulnerability, dependency, or security information.** All data MUST come from Endor Labs MCP tools or the `endorctl` CLI. Do NOT search the web, visit package registries, or external vulnerability databases. If data is unavailable, tell the user and suggest [app.endorlabs.com](https://app.endorlabs.com).
+For data source policy, read `references/data-sources.md`.
 
 ## Error Handling
 
-- **No changes detected**: Tell the user there are no changes to review
-- **Auth error**: Suggest `/endor-setup`
-- **MCP not available**: Perform manual pattern-based review of the diff
+| Error | Action |
+|-------|--------|
+| No changes detected | Tell user there are no changes to review |
+| Auth error | Suggest `/endor-setup` |
+| MCP not available | Perform manual pattern-based review of the diff |
