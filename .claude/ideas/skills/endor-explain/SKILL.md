@@ -24,7 +24,7 @@ Use `get_endor_vulnerability` with the CVE ID.
 
 ### Step 2: Check Project Impact
 
-Use `check_dependency_for_vulnerabilities` against project manifest files to determine if affected.
+Use `check_dependency_for_risks` (preferred, checks vulnerabilities + malware) or `check_dependency_for_vulnerabilities` (fallback) against project manifest files to determine if affected.
 
 ### Step 3: Present
 

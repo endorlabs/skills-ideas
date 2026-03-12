@@ -15,8 +15,9 @@ Before creating a PR, perform these checks:
 
 ### 1. Dependency Changes
 If dependency files were modified:
-- Use `check_dependency_for_vulnerabilities` MCP tool on new/updated dependencies
-- Block if critical vulnerabilities exist
+- Use `check_dependency_for_risks` MCP tool on new/updated dependencies (**preferred** — detects vulnerabilities AND malware)
+- Fallback: `check_dependency_for_vulnerabilities` (known CVEs only)
+- Block if critical vulnerabilities or malware detected
 
 ### 2. Secrets Detection
 Scan all changed files for:

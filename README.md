@@ -197,9 +197,48 @@ When configuring scan behavior, prefix variables with `MCP_`. The MCP server str
 | `MCP_ENDOR_SCAN_LANGUAGES` | Languages to scan (e.g., `go,python`) |
 | `MCP_ENDOR_SCAN_PATH` | Default scan path |
 
+## Security Hooks (Deterministic Enforcement)
+
+Hooks are shell scripts that run **automatically and deterministically** at specific points in Claude Code's lifecycle. Unlike rules (advisory), hooks are guaranteed to execute every time.
+
+See [`.claude/hooks/README.md`](.claude/hooks/README.md) for full documentation, event flow diagrams, and testing instructions.
+
+### Hard Blocks (Tier 1)
+
+| Hook | When | What It Prevents |
+|------|------|------------------|
+| `pre-commit-secrets.sh` | Before git commit/push | Secrets in staged changes |
+| `protect-files.sh` | Before file edit | Edits to `.env`, `.pem`, `.key`, credentials |
+
+### Warnings (Tier 2)
+
+| Hook | When | What It Detects |
+|------|------|-----------------|
+| `warn-secrets-at-write.sh` | Before file write | Secret patterns in content being written |
+| `warn-insecure-code.sh` | Before file write | Dangerous code patterns (injection, XSS, deserialization) |
+| `check-dep-install.sh` | After dep install cmd | New dependencies needing vulnerability check |
+| `check-manifest-edit.sh` | After manifest edit | Changed dependencies needing vulnerability check |
+| `session-review-reminder.sh` | Session end | Unreviewed security-sensitive file changes |
+
+### Suggestions (Tier 3)
+
+| Hook | When | Suggests |
+|------|------|----------|
+| `suggest-container-review.sh` | After Dockerfile/compose edit | `/endor-container` + inline pattern warnings |
+| `suggest-cicd-review.sh` | After CI/CD config edit | `/endor-cicd` + unpinned action warnings |
+| `suggest-sast-review.sh` | After security-sensitive code | `/endor-sast` |
+| `warn-iac-patterns.sh` | After Terraform/K8s edit | IaC anti-pattern warnings |
+| `suggest-license-check.sh` | After dep install cmd | `/endor-license` |
+| `post-scan-routing.sh` | After MCP scan completes | `/endor-findings` → `/endor-fix` workflow |
+| `mcp-error-recovery.sh` | After MCP tool error | `/endor-setup` or `/endor-troubleshoot` |
+| `detect-pr-intent.sh` | User mentions PR/merge | `/endor-review` |
+| `suggest-endor-tools.sh` | User mentions CVE/package | `/endor-explain`, `/endor-score`, `/endor-demo` |
+| `session-security-posture.sh` | Session start/compact | Security posture summary |
+| `track-security-files.sh` | After file edit (silent) | Tracks modifications for session-end review |
+
 ## Automatic Security Rules
 
-This project includes automatic security rules in `.claude/rules/` that trigger during development:
+This project also includes advisory security rules in `.claude/rules/` that guide Claude's behavior:
 
 | Rule | Trigger | Action |
 |------|---------|--------|
@@ -242,8 +281,28 @@ This project includes automatic security rules in `.claude/rules/` that trigger 
 
 ```
 .claude/
-├── settings.json           # MCP server configuration
-├── settings.local.json     # Local overrides (gitignored)
+├── settings.json              # MCP server + hooks configuration
+├── settings.local.json        # Local overrides (gitignored)
+├── hooks/                     # Deterministic security hooks
+│   ├── README.md              # Hook documentation
+│   ├── pre-commit-secrets.sh  # [Block] Secrets in commits
+│   ├── protect-files.sh       # [Block] Sensitive file edits
+│   ├── warn-secrets-at-write.sh    # [Warn] Secrets at write time
+│   ├── warn-insecure-code.sh       # [Warn] Dangerous code patterns
+│   ├── check-dep-install.sh        # [Warn] Dep install → /endor-check
+│   ├── check-manifest-edit.sh      # [Warn] Manifest edit → /endor-check
+│   ├── suggest-container-review.sh  # [Suggest] Dockerfile → /endor-container
+│   ├── suggest-cicd-review.sh      # [Suggest] CI/CD → /endor-cicd
+│   ├── suggest-sast-review.sh      # [Suggest] Security code → /endor-sast
+│   ├── suggest-license-check.sh    # [Suggest] Dep install → /endor-license
+│   ├── warn-iac-patterns.sh        # [Suggest] IaC anti-patterns
+│   ├── post-scan-routing.sh        # [Suggest] Scan → findings → fix
+│   ├── mcp-error-recovery.sh       # [Suggest] MCP errors → setup/troubleshoot
+│   ├── detect-pr-intent.sh         # [Suggest] PR intent → /endor-review
+│   ├── suggest-endor-tools.sh      # [Suggest] CVE/package → relevant skill
+│   ├── session-security-posture.sh  # [Suggest] Session start posture
+│   ├── track-security-files.sh     # [Silent] Track sensitive file mods
+│   └── session-review-reminder.sh   # [Warn] Session-end review reminder
 ├── skills/
 │   ├── endor/              # Main router skill
 │   ├── endor-setup/        # Onboarding wizard
@@ -267,6 +326,7 @@ This project includes automatic security rules in `.claude/rules/` that trigger 
 │   ├── endor-policy/       # Policy management
 │   └── endor-api/          # Direct API access
 └── rules/
+    ├── endor-prevent.md           # Post-tool dependency check rule
     ├── dependency-security.md
     ├── secrets-detection.md
     ├── sast-analysis.md
@@ -277,7 +337,7 @@ This project includes automatic security rules in `.claude/rules/` that trigger 
 
 ## Contributing
 
-When adding new skills:
+### Adding New Skills
 
 1. Create a new directory under `.claude/skills/`
 2. Add a `SKILL.md` file with YAML frontmatter:
@@ -291,6 +351,15 @@ When adding new skills:
    ```
 3. Include Prerequisites, Workflow, Output Format, and Error Handling sections
 4. Test the skill by running the trigger command in Claude Code
+
+### Adding New Hooks
+
+1. Create a bash script in `.claude/hooks/` with a descriptive header comment
+2. Make it executable: `chmod +x .claude/hooks/my-hook.sh`
+3. Wire it in `.claude/settings.json` under the appropriate event and matcher
+4. Test with pipe: `echo '{"tool_name":"...","tool_input":{...}}' | .claude/hooks/my-hook.sh`
+5. Classify by tier: Block (exit 2), Warn (exit 0 + imperative stdout), Suggest (exit 0 + informational stdout)
+6. See [`.claude/hooks/README.md`](.claude/hooks/README.md) for design principles and patterns
 
 ## Links
 

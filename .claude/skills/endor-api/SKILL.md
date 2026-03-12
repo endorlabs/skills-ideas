@@ -40,7 +40,9 @@ Parse the user's request for:
 | `scan` | Scan repo for vulnerabilities, secrets, SAST, dependencies |
 | `get_resource` | Retrieve any resource by UUID or name |
 | `check_dependency_for_vulnerabilities` | Check a package version for known CVEs |
+| `check_dependency_for_risks` | Check a package for vulnerabilities AND malware (prefer over above) |
 | `get_endor_vulnerability` | Get detailed CVE/GHSA info |
+| `security_review` | AI-powered code diff security review (Enterprise only) |
 
 **CLI (for operations not covered by MCP):**
 

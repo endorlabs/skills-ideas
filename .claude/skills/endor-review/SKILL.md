@@ -28,12 +28,17 @@ Categorize changed files into: dependency manifests, source code, config files, 
 
 This only reports **new findings introduced by the PR**, not pre-existing issues. Fall back to individual checks below if incremental scan unavailable.
 
+### Step 1b: AI Security Review (Enterprise Only)
+
+If available, also use `security_review` MCP tool for AI-powered diff analysis. This provides deeper code-level security insights beyond pattern matching. Results complement the checks below.
+
 ### Step 2: Dependency Check
 
 If dependency manifests modified:
 1. Parse diff for new/updated packages
-2. Use `check_dependency_for_vulnerabilities` MCP tool for each
-3. Report vulnerabilities found
+2. Use `check_dependency_for_risks` MCP tool for each (checks vulnerabilities AND malware)
+3. Fallback to `check_dependency_for_vulnerabilities` if `_risks` unavailable
+4. Report vulnerabilities and malware risks found
 
 ### Step 3: SAST Analysis
 
