@@ -1,1 +1,27 @@
 settings.local.json
+
+# Dependencies
+node_modules/
+
+# Environment files (may contain secrets)
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Endor Labs local state
+.endor/
+.endorctl/
+
+# Logs
+*.log
+npm-debug.log*
