@@ -113,15 +113,39 @@ This repo includes Claude Code skills for security workflows. Use `/endor-help` 
 
 ### Security Hooks
 
-This repo uses Claude Code hooks for deterministic security enforcement:
+This repo uses Claude Code hooks for deterministic security enforcement. See `.claude/hooks/README.md` for full documentation.
 
-| Hook | Event | What It Does |
-|------|-------|-------------|
-| `check-dep-install.sh` | PostToolUse (Bash) | Detects dependency installs, triggers `/endor-check` |
-| `check-manifest-edit.sh` | PostToolUse (Edit/Write) | Detects manifest edits, triggers `/endor-check` |
-| `pre-commit-secrets.sh` | PreToolUse (Bash) | Blocks commits/pushes containing secrets |
-| `protect-files.sh` | PreToolUse (Edit/Write) | Blocks edits to `.env`, credential files |
-| `detect-pr-intent.sh` | UserPromptSubmit | Reminds to run `/endor-review` before PRs |
+**Hard Blocks (Tier 1) - prevent dangerous actions:**
+
+| Hook | Event | What It Prevents |
+|------|-------|------------------|
+| `protect-files.sh` | PreToolUse (Edit/Write) | Edits to `.env`, `.pem`, `.key`, credentials |
+
+**Warnings (Tier 2) - flag issues for review:**
+
+| Hook | Event | What It Detects |
+|------|-------|-----------------|
+| `warn-secrets-at-write.sh` | PreToolUse (Edit/Write) | Secret patterns in content being written |
+| `warn-insecure-code.sh` | PreToolUse (Edit/Write) | Dangerous code patterns (injection, XSS, deserialization) |
+| `check-dep-install.sh` | PostToolUse (Bash) | New dependencies needing vulnerability check |
+| `check-manifest-edit.sh` | PostToolUse (Edit/Write) | Changed dependencies needing vulnerability check |
+| `session-review-reminder.sh` | Stop | Unreviewed security-sensitive file changes |
+
+**Suggestions (Tier 3) - recommend relevant tools:**
+
+| Hook | Event | Suggests |
+|------|-------|----------|
+| `suggest-container-review.sh` | PostToolUse (Edit/Write) | `/endor-container` for Dockerfile/compose edits |
+| `suggest-cicd-review.sh` | PostToolUse (Edit/Write) | `/endor-cicd` for CI/CD config edits |
+| `suggest-sast-review.sh` | PostToolUse (Edit/Write) | `/endor-sast` for security-sensitive code |
+| `warn-iac-patterns.sh` | PostToolUse (Edit/Write) | IaC anti-pattern warnings for Terraform/K8s |
+| `suggest-license-check.sh` | PostToolUse (Bash) | `/endor-license` after dep installs |
+| `post-scan-routing.sh` | PostToolUse (MCP scan) | `/endor-findings` and `/endor-fix` workflow |
+| `mcp-error-recovery.sh` | PostToolUse (MCP tools) | `/endor-setup` or troubleshooting on errors |
+| `detect-pr-intent.sh` | UserPromptSubmit | `/endor-review` when PR/merge is mentioned |
+| `suggest-endor-tools.sh` | UserPromptSubmit | Relevant skill when CVE/package is mentioned |
+| `session-security-posture.sh` | SessionStart | Security posture summary |
+| `track-security-files.sh` | PostToolUse (Edit/Write) | Silently tracks sensitive file modifications |
 
 ## Repository Structure
 

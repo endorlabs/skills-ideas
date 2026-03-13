@@ -207,7 +207,6 @@ See [`.claude/hooks/README.md`](.claude/hooks/README.md) for full documentation,
 
 | Hook | When | What It Prevents |
 |------|------|------------------|
-| `pre-commit-secrets.sh` | Before git commit/push | Secrets in staged changes |
 | `protect-files.sh` | Before file edit | Edits to `.env`, `.pem`, `.key`, credentials |
 
 ### Warnings (Tier 2)
@@ -285,7 +284,6 @@ This project also includes advisory security rules in `.claude/rules/` that guid
 ├── settings.local.json        # Local overrides (gitignored)
 ├── hooks/                     # Deterministic security hooks
 │   ├── README.md              # Hook documentation
-│   ├── pre-commit-secrets.sh  # [Block] Secrets in commits
 │   ├── protect-files.sh       # [Block] Sensitive file edits
 │   ├── warn-secrets-at-write.sh    # [Warn] Secrets at write time
 │   ├── warn-insecure-code.sh       # [Warn] Dangerous code patterns

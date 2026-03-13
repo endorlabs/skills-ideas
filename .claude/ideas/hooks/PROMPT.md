@@ -192,10 +192,7 @@ Detects dependency install commands (`npm install`, `pip install`, `go get`, `ca
 ### 2. check-manifest-edit.sh (PostToolUse → Edit|Write)
 Detects edits to manifest files (`package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, etc.) and injects a reminder to run `/endor-check`.
 
-### 3. pre-commit-secrets.sh (PreToolUse → Bash)
-Hard-blocks `git commit` and `git push` if staged changes contain secret patterns (AWS keys, GitHub tokens, private keys, hardcoded passwords, connection strings).
-
-### 4. protect-files.sh (PreToolUse → Edit|Write)
+### 3. protect-files.sh (PreToolUse → Edit|Write)
 Hard-blocks edits to `.env`, `.pem`, `.key`, `credentials.json`. Warns on edits to CI/CD configs, Dockerfiles, lockfiles, Terraform files.
 
 ### 5. detect-pr-intent.sh (UserPromptSubmit)
@@ -212,9 +209,8 @@ Design and implement **new hooks** that expand coverage across the full security
 These hooks catch problems BEFORE they're written, not after. They fire on `PreToolUse` for `Edit|Write` and prevent insecure patterns from ever reaching the file system.
 
 **Secrets at Write Time**
-- The existing `pre-commit-secrets.sh` blocks secrets at COMMIT time (reactive). But the real win is preventing secrets from being WRITTEN in the first place.
 - When Claude writes code containing hardcoded strings matching secret patterns (API keys, tokens, connection strings), the hook should WARN before the file is saved — not block, because the pattern could be a false positive in a test file or documentation.
-- This is different from the commit-time hook: it catches secrets in files that might never be committed but could still be read by other tools or processes.
+- The goal is to catch secrets BEFORE they reach the filesystem, not at commit time.
 
 **Insecure Code Patterns at Write Time**
 - When Claude writes code that uses dangerous patterns: `eval()`, `exec()`, `innerHTML`, `dangerouslySetInnerHTML`, unsanitized SQL string concatenation, `subprocess.run(shell=True)`, `os.system()`, `Runtime.exec()` with user input — warn immediately with a suggestion to use the safe alternative.

@@ -22,7 +22,6 @@ These hooks **prevent** dangerous actions. They cannot be bypassed by Claude.
 
 | Hook | Event | What It Blocks |
 |------|-------|----------------|
-| `pre-commit-secrets.sh` | PreToolUse → Bash | Git commits/pushes with secrets in staged changes (AWS keys, tokens, private keys, hardcoded passwords, connection strings) |
 | `protect-files.sh` | PreToolUse → Edit\|Write | Edits to `.env`, `.pem`, `.key`, `credentials.json`, `.netrc`, `.npmrc` |
 
 ### Tier 2: Warnings + Required Action (exit 0, imperative stdout)
@@ -76,9 +75,6 @@ User types message
     │  ├─ protect-files.sh ............ BLOCK .env, .pem, credentials
     │  ├─ warn-secrets-at-write.sh .... warn on secret patterns in content
     │  └─ warn-insecure-code.sh ....... warn on insecure code patterns
-    │
-    ├─ PreToolUse (Bash)
-    │  └─ pre-commit-secrets.sh ....... BLOCK commits/pushes with secrets
     │
     │  ── Tool Executes ──
     │

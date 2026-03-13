@@ -2,7 +2,6 @@
 # =============================================================================
 # PreToolUse hook: Warn when writing content containing potential secrets
 # =============================================================================
-# Complements: pre-commit-secrets.sh (catches at commit time)
 # This hook catches secrets BEFORE they reach the filesystem.
 #
 # Fires on: PreToolUse → Edit|Write
