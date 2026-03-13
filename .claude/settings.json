@@ -9,9 +9,9 @@
         "mcp-server"
       ],
       "env": {
-        "ENDOR_NAMESPACE": "${ENDOR_NAMESPACE}",
+        "ENDOR_NAMESPACE": "{your-namespace}",
         "ENDOR_API": "https://api.endorlabs.com",
-        "ENDOR_MCP_SERVER_AUTH_MODE": "google"
+        "ENDOR_MCP_SERVER_AUTH_MODE": "{google | github | gitlab | sso}"
       }
     }
   },
