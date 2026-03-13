@@ -16,25 +16,6 @@
     }
   },
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/protect-files.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/warn-secrets-at-write.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/warn-insecure-code.sh"
-          }
-        ]
-      }
-    ],
     "PostToolUse": [
       {
         "matcher": "Bash",
@@ -55,26 +36,6 @@
           {
             "type": "command",
             "command": ".claude/hooks/check-manifest-edit.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/suggest-container-review.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/suggest-cicd-review.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/suggest-sast-review.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/warn-iac-patterns.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/track-security-files.sh"
           }
         ]
       },
@@ -108,17 +69,6 @@
           {
             "type": "command",
             "command": ".claude/hooks/suggest-endor-tools.sh"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "startup|compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/session-security-posture.sh"
           }
         ]
       }

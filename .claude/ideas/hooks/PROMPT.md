@@ -192,59 +192,31 @@ Detects dependency install commands (`npm install`, `pip install`, `go get`, `ca
 ### 2. check-manifest-edit.sh (PostToolUse → Edit|Write)
 Detects edits to manifest files (`package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, etc.) and injects a reminder to run `/endor-check`.
 
-### 3. protect-files.sh (PreToolUse → Edit|Write)
-Hard-blocks edits to `.env`, `.pem`, `.key`, `credentials.json`. Warns on edits to CI/CD configs, Dockerfiles, lockfiles, Terraform files.
+### 3. suggest-license-check.sh (PostToolUse → Bash)
+Suggests `/endor-license` after dependency installs (parallel to `check-dep-install.sh`).
 
-### 5. detect-pr-intent.sh (UserPromptSubmit)
+### 4. post-scan-routing.sh (PostToolUse → MCP scan)
+Routes scan results to `/endor-findings` and `/endor-fix` workflow.
+
+### 5. mcp-error-recovery.sh (PostToolUse → MCP *)
+Handles auth errors, scan failures, and namespace issues — routes to `/endor-setup` or `/endor-troubleshoot`.
+
+### 6. detect-pr-intent.sh (UserPromptSubmit)
 Detects PR/merge/push intent in user prompts and injects a reminder to run `/endor-review`.
+
+### 7. suggest-endor-tools.sh (UserPromptSubmit)
+Detects CVE IDs, package safety questions, demo requests, and setup questions — routes to relevant `/endor-*` skills.
+
+### 8. session-review-reminder.sh (Stop)
+Reminds to run `/endor-review` if security-sensitive files were modified during the session.
 
 ---
 
 ## Your Task
 
-Design and implement **new hooks** that expand coverage across the full security lifecycle. The hooks should be organized into the categories below. Within each category, think about the specific gaps listed and design hooks that fill them precisely.
+Design and implement **new hooks** that route to Endor Labs skills at the right moments. Hooks should ONLY detect when to invoke an Endor Labs skill — they must NOT perform their own security scanning or pattern detection. All security analysis should be delegated to the appropriate `/endor-*` skill or MCP tool.
 
-### Category 1: Proactive Prevention (Shift-Left)
-
-These hooks catch problems BEFORE they're written, not after. They fire on `PreToolUse` for `Edit|Write` and prevent insecure patterns from ever reaching the file system.
-
-**Secrets at Write Time**
-- When Claude writes code containing hardcoded strings matching secret patterns (API keys, tokens, connection strings), the hook should WARN before the file is saved — not block, because the pattern could be a false positive in a test file or documentation.
-- The goal is to catch secrets BEFORE they reach the filesystem, not at commit time.
-
-**Insecure Code Patterns at Write Time**
-- When Claude writes code that uses dangerous patterns: `eval()`, `exec()`, `innerHTML`, `dangerouslySetInnerHTML`, unsanitized SQL string concatenation, `subprocess.run(shell=True)`, `os.system()`, `Runtime.exec()` with user input — warn immediately with a suggestion to use the safe alternative.
-- This is NOT a full SAST scan — it's a fast regex check for the most dangerous patterns. The hook should suggest `/endor-sast` for a thorough analysis.
-
-### Category 2: Context-Aware Triggering (Knowing WHEN to Scan)
-
-These hooks detect the RIGHT MOMENT to invoke a skill. They observe what Claude is doing and inject skill reminders at precisely the right time.
-
-**Code Security (SAST)**
-- When Claude writes code that handles user input, SQL queries, authentication, file operations, or command execution — these are the moments where SAST findings are most likely. Detect these patterns and remind about `/endor-sast`.
-- When Claude creates new API endpoints or route handlers — these are attack surface additions that warrant a SAST review.
-- Be language-aware: detect `app.get()`, `@app.route()`, `@GetMapping`, `http.HandleFunc()`, etc.
-
-**Container Security**
-- When Claude creates or edits Dockerfiles, docker-compose files, or Kubernetes manifests — remind about `/endor-container`.
-- For Dockerfiles specifically, detect dangerous anti-patterns INLINE and warn immediately: running as root (no `USER` directive), using `:latest` tag, `EXPOSE 22`, `--privileged`, secrets in `ARG`/`ENV`.
-- For docker-compose, detect: `privileged: true`, `network_mode: host`, sensitive volume mounts (`/var/run/docker.sock`, `/etc`), missing resource limits.
-
-**License Compliance**
-- When new dependencies are added, license risk should be flagged alongside vulnerability risk. The existing `check-dep-install.sh` hook only triggers `/endor-check`. Create a parallel hook (or extend the existing one) that also triggers `/endor-license`.
-- This is important because a dependency can be vulnerability-free but have a GPL license that's incompatible with a commercial project.
-
-**CI/CD Pipeline Security**
-- When Claude creates or modifies `.github/workflows/*.yml`, `.gitlab-ci.yml`, `Jenkinsfile`, `azure-pipelines.yml`, `bitbucket-pipelines.yml`, `.circleci/config.yml` — inject a reminder to:
-  1. Check for hardcoded secrets in the pipeline config
-  2. Verify action/image versions are pinned (not `:latest` or `@main`)
-  3. Suggest `/endor-cicd` for generating a secure baseline configuration
-
-**Infrastructure as Code**
-- When Claude writes Terraform (`.tf`, `.tfvars`), CloudFormation (`template.yaml`, `template.json`), Kubernetes YAML, Helm charts — these have security concerns orthogonal to application code: public S3 buckets, overly permissive IAM policies, privileged pods, missing network policies, unencrypted resources.
-- No `/endor-iac` skill exists yet, but the hook should still warn about known dangerous patterns and suggest a manual review.
-
-### Category 3: Cross-Skill Orchestration (Workflow Chaining)
+### Category 1: Cross-Skill Orchestration (Workflow Chaining)
 
 These hooks connect skills into workflows. When one skill's output implies the need for another skill, the hook bridges that gap.
 
@@ -263,7 +235,7 @@ These hooks connect skills into workflows. When one skill's output implies the n
 - When any MCP tool call fails (PostToolUseFailure on `mcp__endor-cli-tools__.*`), detect auth-related errors and inject a suggestion to run `/endor-setup`.
 - When scan errors occur that match known patterns (build failures, missing toolchains), suggest `/endor-troubleshoot`.
 
-### Category 4: Session-Level Security Posture
+### Category 2: Session-Level Security Posture
 
 These hooks maintain security awareness across the entire session lifecycle.
 
@@ -278,7 +250,7 @@ These hooks maintain security awareness across the entire session lifecycle.
 **Post-Session Cleanup**
 - On `SessionEnd`, clean up any temp state files created by session-tracking hooks.
 
-### Category 5: Developer Experience (Making Security Frictionless)
+### Category 3: Developer Experience (Making Security Frictionless)
 
 These hooks improve the developer experience around security tooling, making it feel helpful rather than obstructive.
 
@@ -347,9 +319,8 @@ At the end, provide the complete updated `settings.json` with ALL hooks (existin
 13. **Don't over-inject.** If Claude is already running a security skill (e.g., the user typed `/endor-review`), hooks should NOT also inject reminders to run security checks. Check the prompt or recent context for skill invocations before injecting.
 
 14. **Categorize hooks by severity tier.** Not all hooks are equal:
-    - **Tier 1 (Block):** Secrets in commits, edits to credential files — these MUST be stopped.
-    - **Tier 2 (Warn + Require Action):** Dependency installs without checks, PR creation without review — inject imperative reminders.
-    - **Tier 3 (Suggest):** CVE mentioned without `/endor-explain`, package discussed without `/endor-score` — gentle suggestions that Claude can act on or skip.
+    - **Tier 1 (Warn + Require Action):** Dependency installs without checks, PR creation without review — inject imperative reminders.
+    - **Tier 2 (Suggest):** CVE mentioned without `/endor-explain`, package discussed without `/endor-score` — gentle suggestions that Claude can act on or skip.
 
 15. **Consider the `PostToolUseFailure` event.** This fires when a tool FAILS, not when it succeeds. This is the perfect event for error recovery hooks: detect MCP auth failures, scan timeouts, or CLI errors, and route to `/endor-setup` or `/endor-troubleshoot`.
 

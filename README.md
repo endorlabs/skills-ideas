@@ -197,43 +197,22 @@ When configuring scan behavior, prefix variables with `MCP_`. The MCP server str
 | `MCP_ENDOR_SCAN_LANGUAGES` | Languages to scan (e.g., `go,python`) |
 | `MCP_ENDOR_SCAN_PATH` | Default scan path |
 
-## Security Hooks (Deterministic Enforcement)
+## Hooks (Endor Labs Skill Routing)
 
-Hooks are shell scripts that run **automatically and deterministically** at specific points in Claude Code's lifecycle. Unlike rules (advisory), hooks are guaranteed to execute every time.
+Hooks are shell scripts that run automatically at specific points in Claude Code's lifecycle. They detect the right moment to invoke an Endor Labs skill and inject reminders into Claude's context.
 
 See [`.claude/hooks/README.md`](.claude/hooks/README.md) for full documentation, event flow diagrams, and testing instructions.
 
-### Hard Blocks (Tier 1)
-
-| Hook | When | What It Prevents |
-|------|------|------------------|
-| `protect-files.sh` | Before file edit | Edits to `.env`, `.pem`, `.key`, credentials |
-
-### Warnings (Tier 2)
-
-| Hook | When | What It Detects |
-|------|------|-----------------|
-| `warn-secrets-at-write.sh` | Before file write | Secret patterns in content being written |
-| `warn-insecure-code.sh` | Before file write | Dangerous code patterns (injection, XSS, deserialization) |
-| `check-dep-install.sh` | After dep install cmd | New dependencies needing vulnerability check |
-| `check-manifest-edit.sh` | After manifest edit | Changed dependencies needing vulnerability check |
-| `session-review-reminder.sh` | Session end | Unreviewed security-sensitive file changes |
-
-### Suggestions (Tier 3)
-
-| Hook | When | Suggests |
-|------|------|----------|
-| `suggest-container-review.sh` | After Dockerfile/compose edit | `/endor-container` + inline pattern warnings |
-| `suggest-cicd-review.sh` | After CI/CD config edit | `/endor-cicd` + unpinned action warnings |
-| `suggest-sast-review.sh` | After security-sensitive code | `/endor-sast` |
-| `warn-iac-patterns.sh` | After Terraform/K8s edit | IaC anti-pattern warnings |
-| `suggest-license-check.sh` | After dep install cmd | `/endor-license` |
-| `post-scan-routing.sh` | After MCP scan completes | `/endor-findings` → `/endor-fix` workflow |
-| `mcp-error-recovery.sh` | After MCP tool error | `/endor-setup` or `/endor-troubleshoot` |
-| `detect-pr-intent.sh` | User mentions PR/merge | `/endor-review` |
-| `suggest-endor-tools.sh` | User mentions CVE/package | `/endor-explain`, `/endor-score`, `/endor-demo` |
-| `session-security-posture.sh` | Session start/compact | Security posture summary |
-| `track-security-files.sh` | After file edit (silent) | Tracks modifications for session-end review |
+| Hook | When | What It Does |
+|------|------|--------------|
+| `check-dep-install.sh` | After dep install cmd | Detects dep installs → `/endor-check` |
+| `check-manifest-edit.sh` | After manifest edit | Detects manifest edits → `/endor-check` |
+| `suggest-license-check.sh` | After dep install cmd | Suggests `/endor-license` |
+| `post-scan-routing.sh` | After MCP scan completes | Routes scan results → `/endor-findings`, `/endor-fix` |
+| `mcp-error-recovery.sh` | After MCP tool error | Handles MCP errors → `/endor-setup` |
+| `detect-pr-intent.sh` | User mentions PR/merge | Suggests `/endor-review` |
+| `suggest-endor-tools.sh` | User mentions CVE/package | Suggests relevant `/endor-*` skills |
+| `session-review-reminder.sh` | Session end | Reminds to run `/endor-review` |
 
 ## Automatic Security Rules
 
@@ -282,25 +261,16 @@ This project also includes advisory security rules in `.claude/rules/` that guid
 .claude/
 ├── settings.json              # MCP server + hooks configuration
 ├── settings.local.json        # Local overrides (gitignored)
-├── hooks/                     # Deterministic security hooks
+├── hooks/                     # Hooks (route to Endor Labs skills)
 │   ├── README.md              # Hook documentation
-│   ├── protect-files.sh       # [Block] Sensitive file edits
-│   ├── warn-secrets-at-write.sh    # [Warn] Secrets at write time
-│   ├── warn-insecure-code.sh       # [Warn] Dangerous code patterns
-│   ├── check-dep-install.sh        # [Warn] Dep install → /endor-check
-│   ├── check-manifest-edit.sh      # [Warn] Manifest edit → /endor-check
-│   ├── suggest-container-review.sh  # [Suggest] Dockerfile → /endor-container
-│   ├── suggest-cicd-review.sh      # [Suggest] CI/CD → /endor-cicd
-│   ├── suggest-sast-review.sh      # [Suggest] Security code → /endor-sast
-│   ├── suggest-license-check.sh    # [Suggest] Dep install → /endor-license
-│   ├── warn-iac-patterns.sh        # [Suggest] IaC anti-patterns
-│   ├── post-scan-routing.sh        # [Suggest] Scan → findings → fix
-│   ├── mcp-error-recovery.sh       # [Suggest] MCP errors → setup/troubleshoot
-│   ├── detect-pr-intent.sh         # [Suggest] PR intent → /endor-review
-│   ├── suggest-endor-tools.sh      # [Suggest] CVE/package → relevant skill
-│   ├── session-security-posture.sh  # [Suggest] Session start posture
-│   ├── track-security-files.sh     # [Silent] Track sensitive file mods
-│   └── session-review-reminder.sh   # [Warn] Session-end review reminder
+│   ├── check-dep-install.sh        # Dep install → /endor-check
+│   ├── check-manifest-edit.sh      # Manifest edit → /endor-check
+│   ├── suggest-license-check.sh    # Dep install → /endor-license
+│   ├── post-scan-routing.sh        # Scan → /endor-findings → /endor-fix
+│   ├── mcp-error-recovery.sh       # MCP errors → /endor-setup
+│   ├── detect-pr-intent.sh         # PR intent → /endor-review
+│   ├── suggest-endor-tools.sh      # CVE/package → relevant /endor-* skill
+│   └── session-review-reminder.sh  # Session-end → /endor-review reminder
 ├── skills/
 │   ├── endor/              # Main router skill
 │   ├── endor-setup/        # Onboarding wizard

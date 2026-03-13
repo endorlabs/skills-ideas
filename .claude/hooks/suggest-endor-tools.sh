@@ -4,7 +4,7 @@
 # =============================================================================
 # Detects when the user mentions CVE IDs, asks about package safety, or
 # mentions "demo/try" in the context of security tools — and suggests the
-# appropriate skill. Tier 3 (gentle suggestions, not blocks or requirements).
+# appropriate skill.
 #
 # Complements: detect-pr-intent.sh (which handles PR/merge intent)
 # This hook handles: CVE references, package evaluation, demo requests.

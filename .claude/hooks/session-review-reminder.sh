@@ -2,9 +2,8 @@
 # =============================================================================
 # Stop hook: Remind about security review if sensitive files were modified
 # =============================================================================
-# Reads the session tracking state (written by track-security-files.sh) and
-# checks if security-sensitive files were modified without a corresponding
-# security review. If so, injects a final reminder.
+# Checks if security-sensitive files were modified without a corresponding
+# security review. If so, injects a final reminder to run /endor-review.
 #
 # Fires on: Stop
 # Exit 0 + stdout = inject review reminder (blocks completion, forces one more turn)

@@ -113,61 +113,32 @@ This repo includes Claude Code skills for security workflows. Use `/endor-help` 
 
 ### Security Hooks
 
-This repo uses Claude Code hooks for deterministic security enforcement. See `.claude/hooks/README.md` for full documentation.
+This repo uses Claude Code hooks to route to Endor Labs skills at the right moments. See `.claude/hooks/README.md` for full documentation.
 
-**Hard Blocks (Tier 1) - prevent dangerous actions:**
-
-| Hook | Event | What It Prevents |
-|------|-------|------------------|
-| `protect-files.sh` | PreToolUse (Edit/Write) | Edits to `.env`, `.pem`, `.key`, credentials |
-
-**Warnings (Tier 2) - flag issues for review:**
-
-| Hook | Event | What It Detects |
-|------|-------|-----------------|
-| `warn-secrets-at-write.sh` | PreToolUse (Edit/Write) | Secret patterns in content being written |
-| `warn-insecure-code.sh` | PreToolUse (Edit/Write) | Dangerous code patterns (injection, XSS, deserialization) |
-| `check-dep-install.sh` | PostToolUse (Bash) | New dependencies needing vulnerability check |
-| `check-manifest-edit.sh` | PostToolUse (Edit/Write) | Changed dependencies needing vulnerability check |
-| `session-review-reminder.sh` | Stop | Unreviewed security-sensitive file changes |
-
-**Suggestions (Tier 3) - recommend relevant tools:**
-
-| Hook | Event | Suggests |
-|------|-------|----------|
-| `suggest-container-review.sh` | PostToolUse (Edit/Write) | `/endor-container` for Dockerfile/compose edits |
-| `suggest-cicd-review.sh` | PostToolUse (Edit/Write) | `/endor-cicd` for CI/CD config edits |
-| `suggest-sast-review.sh` | PostToolUse (Edit/Write) | `/endor-sast` for security-sensitive code |
-| `warn-iac-patterns.sh` | PostToolUse (Edit/Write) | IaC anti-pattern warnings for Terraform/K8s |
-| `suggest-license-check.sh` | PostToolUse (Bash) | `/endor-license` after dep installs |
-| `post-scan-routing.sh` | PostToolUse (MCP scan) | `/endor-findings` and `/endor-fix` workflow |
-| `mcp-error-recovery.sh` | PostToolUse (MCP tools) | `/endor-setup` or troubleshooting on errors |
-| `detect-pr-intent.sh` | UserPromptSubmit | `/endor-review` when PR/merge is mentioned |
-| `suggest-endor-tools.sh` | UserPromptSubmit | Relevant skill when CVE/package is mentioned |
-| `session-security-posture.sh` | SessionStart | Security posture summary |
-| `track-security-files.sh` | PostToolUse (Edit/Write) | Silently tracks sensitive file modifications |
+| Hook | Event | What It Does |
+|------|-------|--------------|
+| `check-dep-install.sh` | PostToolUse (Bash) | Detects dep installs → `/endor-check` |
+| `check-manifest-edit.sh` | PostToolUse (Edit/Write) | Detects manifest edits → `/endor-check` |
+| `suggest-license-check.sh` | PostToolUse (Bash) | Suggests `/endor-license` after dep installs |
+| `post-scan-routing.sh` | PostToolUse (MCP scan) | Routes scan results → `/endor-findings`, `/endor-fix` |
+| `mcp-error-recovery.sh` | PostToolUse (MCP tools) | Handles MCP errors → `/endor-setup` |
+| `detect-pr-intent.sh` | UserPromptSubmit | Detects PR intent → `/endor-review` |
+| `suggest-endor-tools.sh` | UserPromptSubmit | Suggests `/endor-*` skills for CVE/package mentions |
+| `session-review-reminder.sh` | Stop | Reminds to run `/endor-review` before PR |
 
 ## Repository Structure
 
 ```
-src/
-  golang/    - Go services and libraries
-  node/      - Node.js packages
-  java/      - Java services
-  typescript/ - TypeScript packages
-  semgrep/   - Semgrep/Opengrep rules
-infra/       - Infrastructure and deployment configs
-doc/         - Internal documentation
 .claude/     - Claude Code configuration
   skills/    - Claude Code skills (slash commands)
   rules/     - Automatic security rules
-  hooks/     - Deterministic security hooks (guaranteed enforcement)
+  hooks/     - Hooks (route to Endor Labs skills)
   ideas/     - Planned skills, rules, and hooks (in development)
 ```
 
 ## Development Guidelines
 
-- Always scan code for security issues before committing
+- Always scan code for security issues before committing using `/endor-sast`
 - Check new dependencies for vulnerabilities using `/endor-check`
 - Run `/endor-review` before creating pull requests
 - Use parameterized queries for all database operations

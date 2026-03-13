@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Endor Labs Claude Code Skill Installer
-# This script installs the Endor Labs skills, rules, and security hooks
+# This script installs the Endor Labs skills, rules, and hooks
 # into your Claude Code configuration
 
 set -e
@@ -18,7 +18,7 @@ fi
 
 if [ ! -d "$SKILL_SOURCE/hooks" ]; then
     echo "Warning: Hooks directory not found at $SKILL_SOURCE/hooks"
-    echo "Security hooks will not be installed."
+    echo "Hooks will not be installed."
     SKIP_HOOKS=true
 else
     SKIP_HOOKS=false
@@ -172,7 +172,7 @@ if [ -f "$INSTALL_DIR/settings.json" ]; then
     echo
     echo "Existing settings.json found. Please manually merge:"
     echo "  - MCP server configuration (mcpServers)"
-    echo "  - Security hooks configuration (hooks)"
+    echo "  - Hooks configuration (hooks)"
     echo
     echo "Source file: $SKILL_SOURCE/settings.json"
     echo
@@ -229,7 +229,7 @@ echo "Installed components:"
 echo "  - Skills (slash commands for security workflows)"
 echo "  - Rules (advisory security guidance)"
 if [ "$SKIP_HOOKS" = false ]; then
-    echo "  - Hooks (deterministic security enforcement)"
+    echo "  - Hooks (route to Endor Labs skills at the right moments)"
 fi
 echo
 echo "Next steps:"
