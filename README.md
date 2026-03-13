@@ -2,6 +2,11 @@
 
 Integrate Endor Labs security scanning into your Claude Code development workflow. Scan for vulnerabilities, check dependencies, get remediation guidance, and enforce security policies - all without leaving your editor.
 
+## No Warranty
+Please be advised that this software is provided on an "as is" basis, without warranty of any kind, express or implied. The authors and contributors make no representations or warranties of any kind concerning the safety, suitability, lack of viruses, inaccuracies, typographical errors, or other harmful components of this software. There are inherent dangers in the use of any software, and you are solely responsible for determining whether this software is compatible with your equipment and other software installed on your equipment.
+
+By using this software, you acknowledge that you have read this disclaimer, understand it, and agree to be bound by its terms and conditions. You also agree that the authors and contributors of this software are not liable for any damages you may suffer as a result of using, modifying, or distributing this software.
+
 ## Quick Start
 
 ### Prerequisites
