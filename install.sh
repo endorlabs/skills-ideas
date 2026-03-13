@@ -1,18 +1,27 @@
 #!/bin/bash
 
 # Endor Labs Claude Code Skill Installer
-# This script installs the Endor Labs skill into your Claude Code configuration
+# This script installs the Endor Labs skills, rules, and hooks
+# into your Claude Code configuration
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_SOURCE="$SCRIPT_DIR/.claude"
 
-# Validate source directory
+# Validate source directories
 if [ ! -d "$SKILL_SOURCE/skills" ]; then
     echo "Error: Skills directory not found at $SKILL_SOURCE/skills"
     echo "Please run this script from the endor-solutions-claude-skills repository root."
     exit 1
+fi
+
+if [ ! -d "$SKILL_SOURCE/hooks" ]; then
+    echo "Warning: Hooks directory not found at $SKILL_SOURCE/hooks"
+    echo "Hooks will not be installed."
+    SKIP_HOOKS=true
+else
+    SKIP_HOOKS=false
 fi
 
 echo "==================================="
@@ -64,9 +73,12 @@ case $choice in
         ;;
 esac
 
-# Create directory if needed
+# Create directories if needed
 mkdir -p "$INSTALL_DIR/skills"
 mkdir -p "$INSTALL_DIR/rules"
+if [ "$SKIP_HOOKS" = false ]; then
+    mkdir -p "$INSTALL_DIR/hooks"
+fi
 
 echo "Installing to $INSTALL_DIR..."
 
@@ -101,6 +113,32 @@ if [ "$USE_SYMLINKS" = true ]; then
         ln -s "$rule_file" "$target"
         echo "  Linked: $rule_name"
     done
+
+    # Symlink each hook script
+    if [ "$SKIP_HOOKS" = false ]; then
+        for hook_file in "$SKILL_SOURCE/hooks/"*.sh; do
+            hook_name=$(basename "$hook_file")
+            target="$INSTALL_DIR/hooks/$hook_name"
+            if [ -L "$target" ]; then
+                rm "$target"
+            elif [ -f "$target" ]; then
+                echo "  Warning: $hook_name exists as a regular file, replacing with symlink"
+                rm "$target"
+            fi
+            ln -s "$hook_file" "$target"
+            echo "  Linked: $hook_name"
+        done
+
+        # Copy hooks README
+        if [ -f "$SKILL_SOURCE/hooks/README.md" ]; then
+            target="$INSTALL_DIR/hooks/README.md"
+            if [ -L "$target" ]; then
+                rm "$target"
+            fi
+            ln -s "$SKILL_SOURCE/hooks/README.md" "$target"
+            echo "  Linked: README.md (hooks)"
+        fi
+    fi
 else
     echo "Copying files..."
     echo
@@ -116,18 +154,31 @@ else
         echo "Error: Failed to copy rules from $SKILL_SOURCE/rules/"
         exit 1
     fi
+
+    # Copy hooks
+    if [ "$SKIP_HOOKS" = false ]; then
+        if ! cp -r "$SKILL_SOURCE/hooks/"* "$INSTALL_DIR/hooks/"; then
+            echo "Error: Failed to copy hooks from $SKILL_SOURCE/hooks/"
+            exit 1
+        fi
+        # Ensure hook scripts are executable
+        chmod +x "$INSTALL_DIR/hooks/"*.sh 2>/dev/null || true
+        echo "  Installed hooks ($(ls -1 "$INSTALL_DIR/hooks/"*.sh 2>/dev/null | wc -l | tr -d ' ') scripts)"
+    fi
 fi
 
 # Merge or create settings.json
 if [ -f "$INSTALL_DIR/settings.json" ]; then
     echo
-    echo "Existing settings.json found. Please manually add MCP server config:"
+    echo "Existing settings.json found. Please manually merge:"
+    echo "  - MCP server configuration (mcpServers)"
+    echo "  - Hooks configuration (hooks)"
     echo
-    cat "$SKILL_SOURCE/settings.json"
+    echo "Source file: $SKILL_SOURCE/settings.json"
     echo
 else
     cp "$SKILL_SOURCE/settings.json" "$INSTALL_DIR/settings.json"
-    echo "Created settings.json with MCP server configuration"
+    echo "Created settings.json with MCP server and hooks configuration"
 fi
 
 # Copy CLAUDE.md if installing to project
@@ -147,7 +198,7 @@ echo "Installation complete!"
 echo "==================================="
 echo
 if [ "$USE_SYMLINKS" = true ]; then
-    echo "Skills are symlinked to: $SCRIPT_DIR"
+    echo "Skills, rules, and hooks are symlinked to: $SCRIPT_DIR"
     echo "Any updates to that repo (e.g. git pull) will apply automatically."
     echo
 fi
@@ -174,9 +225,16 @@ echo "  /endor-cicd       - Generate CI/CD pipelines"
 echo "  /endor-api        - Direct API access"
 echo "  /endor-demo       - Try without an account"
 echo
+echo "Installed components:"
+echo "  - Skills (slash commands for security workflows)"
+echo "  - Rules (advisory security guidance)"
+if [ "$SKIP_HOOKS" = false ]; then
+    echo "  - Hooks (route to Endor Labs skills at the right moments)"
+fi
+echo
 echo "Next steps:"
 echo "1. Set ENDOR_NAMESPACE in .claude/settings.json (or export ENDOR_NAMESPACE=your-namespace)"
-echo "2. Restart Claude Code to load the MCP server and skills"
+echo "2. Restart Claude Code to load the MCP server, skills, and hooks"
 echo "3. Run /endor-setup if you need help with authentication"
 echo
 echo "Try it: /endor-scan"

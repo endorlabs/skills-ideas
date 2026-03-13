@@ -1,13 +1,13 @@
 ---
 name: endor-check
 description: |
-  Check if a specific dependency has known vulnerabilities using Endor Labs. Provide a package name and optionally a version to get vulnerability information.
+  Check if a specific dependency has known vulnerabilities or malware using Endor Labs. Provide a package name and optionally a version to get vulnerability and risk information.
   - MANDATORY TRIGGERS: endor check, check dependency, check package, check vulnerability, is this package safe, endor-check
 ---
 
 # Endor Labs Dependency Check
 
-Check a specific dependency for known vulnerabilities.
+Check a specific dependency for known vulnerabilities and malware risks.
 
 ## Input Parsing
 
@@ -20,26 +20,32 @@ Extract from user input:
 
 | Package Manager | `ecosystem` Parameter |
 |-----------------|----------------------|
-| npm/yarn | `npm` |
+| npm/yarn/pnpm | `npm` |
 | pip/poetry | `python` |
 | Go modules | `go` |
 | Maven | `maven` (use `groupid:artifactid` for dependency name) |
 | Gradle | `java` |
+| Cargo | `rust` |
+| NuGet | `dotnet` |
+| RubyGems | `ruby` |
+| Composer | `php` |
 
 ## Workflow
 
-### Step 1: Check for Vulnerabilities
+### Step 1: Check for Vulnerabilities and Risks
 
-Use `check_dependency_for_vulnerabilities` MCP tool with `ecosystem`, `dependency_name`, and `version`.
+**Preferred:** Use `check_dependency_for_risks` MCP tool with `ecosystem`, `dependency_name`, and `version`. This checks for both vulnerabilities AND malware.
+
+**Fallback:** If `check_dependency_for_risks` is unavailable, use `check_dependency_for_vulnerabilities` MCP tool (same parameters, vulnerabilities only).
 
 ### Step 2: Present Results
 
-#### If Vulnerabilities Found
+#### If Vulnerabilities or Risks Found
 
 ```markdown
-## Vulnerability Check: {package}@{version}
+## Security Check: {package}@{version}
 
-**Status:** VULNERABLE
+**Status:** {VULNERABLE / MALWARE DETECTED / VULNERABLE + MALWARE}
 **Language:** {language}
 
 ### Vulnerabilities Found
@@ -48,9 +54,16 @@ Use `check_dependency_for_vulnerabilities` MCP tool with `ecosystem`, `dependenc
 |-----|----------|-------------|----------|
 | {cve} | Critical | {desc} | {fixed_version} |
 
+### Malware Risks (if detected)
+
+| Risk | Severity | Description |
+|------|----------|-------------|
+| {risk_type} | {severity} | {description} |
+
 ### Recommended Action
 
 Upgrade to **{safe_version}** to resolve all known vulnerabilities.
+If malware detected: **Remove this package immediately** and find a safe alternative.
 ```
 
 For install commands, read `references/install-commands.md`.

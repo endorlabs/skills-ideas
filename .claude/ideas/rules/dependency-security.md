@@ -19,8 +19,9 @@ This rule activates when you:
    - Note the ecosystem, package name, and version
 
 2. **Check Each Dependency**
-   - Use the `check_dependency_for_vulnerabilities` MCP tool
-   - Parameters: `ecosystem` (npm, python, java, go, maven), `dependency_name`, `version`
+   - Use `check_dependency_for_risks` MCP tool (**preferred** — detects vulnerabilities AND malware)
+   - Fallback: `check_dependency_for_vulnerabilities` (known CVEs only)
+   - Parameters: `ecosystem` (npm, python, java, go, maven, rust, dotnet, ruby, php), `dependency_name`, `version`
 
 3. **Handle Results**
    - If vulnerabilities found: report CVE IDs, suggest safe versions from the tool's recommendations, update the manifest
@@ -38,6 +39,10 @@ This rule activates when you:
 | go.mod, go.sum | `go` |
 | pom.xml | `maven` |
 | build.gradle, build.gradle.kts | `java` |
+| Cargo.toml | `rust` |
+| *.csproj, packages.config | `dotnet` |
+| Gemfile | `ruby` |
+| composer.json | `php` |
 
 ## Do Not Skip
 

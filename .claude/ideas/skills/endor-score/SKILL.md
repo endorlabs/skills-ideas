@@ -18,12 +18,14 @@ Extract from user input:
 
 ## Workflow
 
-### Step 1: Check Vulnerabilities
+### Step 1: Check Vulnerabilities and Risks
 
-Use `check_dependency_for_vulnerabilities` MCP tool:
-- `ecosystem`: npm, python, go, java, maven
+Use `check_dependency_for_risks` MCP tool (preferred — checks vulnerabilities AND malware):
+- `ecosystem`: npm, python, go, java, maven, rust, dotnet, ruby, php
 - `dependency_name`: package name
 - `version`: version to evaluate
+
+Fallback to `check_dependency_for_vulnerabilities` if `_risks` unavailable.
 
 ### Step 2: Get Package Metrics
 

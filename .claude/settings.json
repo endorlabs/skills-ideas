@@ -14,5 +14,75 @@
         "ENDOR_MCP_SERVER_AUTH_MODE": "google"
       }
     }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/check-dep-install.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/suggest-license-check.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/check-manifest-edit.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__endor-cli-tools__scan",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-scan-routing.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__endor-cli-tools__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/mcp-error-recovery.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/detect-pr-intent.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/suggest-endor-tools.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/session-review-reminder.sh"
+          }
+        ]
+      }
+    ]
   }
 }

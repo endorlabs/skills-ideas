@@ -121,10 +121,10 @@ For CLI auth users, verify token:
 npx -y endorctl auth --print-access-token -n <namespace>
 ```
 
-After restarting Claude Code, verify MCP by calling `check_dependency_for_vulnerabilities`:
+After restarting Claude Code, verify MCP by calling `check_dependency_for_risks` (or `check_dependency_for_vulnerabilities`):
 - ecosystem: `npm`, dependency_name: `lodash`, version: `4.17.20`
 
-If it returns vulnerability data, setup works. Browser auth prompt on first use is expected for Option B.
+If it returns vulnerability/risk data, setup works. Browser auth prompt on first use is expected for Option B.
 
 ## Step 6: Success
 
@@ -163,7 +163,9 @@ If it returns vulnerability data, setup works. Browser auth prompt on first use 
 
 | Tool | Description |
 |------|-------------|
-| `scan` | Scan repo for vulnerabilities, secrets, SAST |
-| `check_dependency_for_vulnerabilities` | Check package version for CVEs |
+| `scan` | Scan repo for vulnerabilities, secrets, SAST, dependencies |
+| `check_dependency_for_vulnerabilities` | Check package version for known CVEs |
+| `check_dependency_for_risks` | Check package for vulnerabilities AND malware (prefer this) |
 | `get_endor_vulnerability` | Detailed CVE/GHSA info |
 | `get_resource` | Retrieve any Endor Labs resource |
+| `security_review` | AI-powered code diff security review (Enterprise only) |

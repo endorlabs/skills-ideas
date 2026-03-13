@@ -197,9 +197,26 @@ When configuring scan behavior, prefix variables with `MCP_`. The MCP server str
 | `MCP_ENDOR_SCAN_LANGUAGES` | Languages to scan (e.g., `go,python`) |
 | `MCP_ENDOR_SCAN_PATH` | Default scan path |
 
+## Hooks (Endor Labs Skill Routing)
+
+Hooks are shell scripts that run automatically at specific points in Claude Code's lifecycle. They detect the right moment to invoke an Endor Labs skill and inject reminders into Claude's context.
+
+See [`.claude/hooks/README.md`](.claude/hooks/README.md) for full documentation, event flow diagrams, and testing instructions.
+
+| Hook | When | What It Does |
+|------|------|--------------|
+| `check-dep-install.sh` | After dep install cmd | Detects dep installs → `/endor-check` |
+| `check-manifest-edit.sh` | After manifest edit | Detects manifest edits → `/endor-check` |
+| `suggest-license-check.sh` | After dep install cmd | Suggests `/endor-license` |
+| `post-scan-routing.sh` | After MCP scan completes | Routes scan results → `/endor-findings`, `/endor-fix` |
+| `mcp-error-recovery.sh` | After MCP tool error | Handles MCP errors → `/endor-setup` |
+| `detect-pr-intent.sh` | User mentions PR/merge | Suggests `/endor-review` |
+| `suggest-endor-tools.sh` | User mentions CVE/package | Suggests relevant `/endor-*` skills |
+| `session-review-reminder.sh` | Session end | Reminds to run `/endor-review` |
+
 ## Automatic Security Rules
 
-This project includes automatic security rules in `.claude/rules/` that trigger during development:
+This project also includes advisory security rules in `.claude/rules/` that guide Claude's behavior:
 
 | Rule | Trigger | Action |
 |------|---------|--------|
@@ -242,8 +259,18 @@ This project includes automatic security rules in `.claude/rules/` that trigger 
 
 ```
 .claude/
-├── settings.json           # MCP server configuration
-├── settings.local.json     # Local overrides (gitignored)
+├── settings.json              # MCP server + hooks configuration
+├── settings.local.json        # Local overrides (gitignored)
+├── hooks/                     # Hooks (route to Endor Labs skills)
+│   ├── README.md              # Hook documentation
+│   ├── check-dep-install.sh        # Dep install → /endor-check
+│   ├── check-manifest-edit.sh      # Manifest edit → /endor-check
+│   ├── suggest-license-check.sh    # Dep install → /endor-license
+│   ├── post-scan-routing.sh        # Scan → /endor-findings → /endor-fix
+│   ├── mcp-error-recovery.sh       # MCP errors → /endor-setup
+│   ├── detect-pr-intent.sh         # PR intent → /endor-review
+│   ├── suggest-endor-tools.sh      # CVE/package → relevant /endor-* skill
+│   └── session-review-reminder.sh  # Session-end → /endor-review reminder
 ├── skills/
 │   ├── endor/              # Main router skill
 │   ├── endor-setup/        # Onboarding wizard
@@ -267,6 +294,7 @@ This project includes automatic security rules in `.claude/rules/` that trigger 
 │   ├── endor-policy/       # Policy management
 │   └── endor-api/          # Direct API access
 └── rules/
+    ├── endor-prevent.md           # Post-tool dependency check rule
     ├── dependency-security.md
     ├── secrets-detection.md
     ├── sast-analysis.md
@@ -277,7 +305,7 @@ This project includes automatic security rules in `.claude/rules/` that trigger 
 
 ## Contributing
 
-When adding new skills:
+### Adding New Skills
 
 1. Create a new directory under `.claude/skills/`
 2. Add a `SKILL.md` file with YAML frontmatter:
@@ -291,6 +319,15 @@ When adding new skills:
    ```
 3. Include Prerequisites, Workflow, Output Format, and Error Handling sections
 4. Test the skill by running the trigger command in Claude Code
+
+### Adding New Hooks
+
+1. Create a bash script in `.claude/hooks/` with a descriptive header comment
+2. Make it executable: `chmod +x .claude/hooks/my-hook.sh`
+3. Wire it in `.claude/settings.json` under the appropriate event and matcher
+4. Test with pipe: `echo '{"tool_name":"...","tool_input":{...}}' | .claude/hooks/my-hook.sh`
+5. Classify by tier: Block (exit 2), Warn (exit 0 + imperative stdout), Suggest (exit 0 + informational stdout)
+6. See [`.claude/hooks/README.md`](.claude/hooks/README.md) for design principles and patterns
 
 ## Links
 
