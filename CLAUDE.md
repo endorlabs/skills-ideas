@@ -113,7 +113,7 @@ This repo includes Claude Code skills for security workflows. Use `/endor-help` 
 
 ### Security Hooks
 
-This repo uses Claude Code hooks to route to Endor Labs skills at the right moments. See `.claude/hooks/README.md` for full documentation.
+This repo uses Claude Code hooks to route to Endor Labs skills at the right moments. See `hooks/README.md` for full documentation.
 
 | Hook | Event | What It Does |
 |------|-------|--------------|
@@ -129,11 +129,14 @@ This repo uses Claude Code hooks to route to Endor Labs skills at the right mome
 ## Repository Structure
 
 ```
-.claude/     - Claude Code configuration
-  skills/    - Claude Code skills (slash commands)
-  rules/     - Automatic security rules
-  hooks/     - Hooks (route to Endor Labs skills)
-  ideas/     - Planned skills, rules, and hooks (in development)
+skills/          - Claude Code skills (slash commands)
+  references/    - Shared reference docs for all skills
+  endor-*/       - Individual skill directories (22 skills)
+hooks/           - Hooks (route to Endor Labs skills at the right moments)
+rules/           - Automatic security rules
+settings.json    - MCP server and hooks configuration template
+install.sh       - Installer (copies/symlinks into user's ~/.claude/)
+CLAUDE.md        - Project instructions for Claude Code
 ```
 
 ## Development Guidelines

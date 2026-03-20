@@ -7,7 +7,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SKILL_SOURCE="$SCRIPT_DIR/.claude"
+SKILL_SOURCE="$SCRIPT_DIR"
 
 # Validate source directories
 if [ ! -d "$SKILL_SOURCE/skills" ]; then
