@@ -22,10 +22,19 @@ Always-on guardrails for Endor Labs MCP tools. These apply every session, whethe
 
 ## Fallback Behavior
 
-- If any MCP tool fails with an auth error, guide the user through `/endor-setup` — do not silently fall back to CLI commands
 - If `scan` returns an error, show the exact error message — never fabricate a diagnosis
 - CLI fallback (`npx -y endorctl`) should only be used when the user explicitly confirms MCP is unavailable
 - Always use `npx -y endorctl` (not bare `endorctl`) to ensure auto-installation
+
+## Authentication Recovery
+
+If any `endorctl` command or MCP tool fails with an auth/credentials error (e.g. "no credentials found", "invalid permissions", token expired), do NOT stop and suggest `/endor-setup`. Instead, handle it inline:
+
+1. Tell the user: "Authentication is missing or expired. I'll re-authenticate now."
+2. Ask the user to select their auth mode from: `google`, `github`, `api-key`
+3. Ask the user which namespace/tenant to use (show the list if available from a prior attempt)
+4. Run: `echo "<TENANT_NUMBER>" | npx -y endorctl init --auth-mode=<SELECTED_AUTH_MODE>`
+5. Once authenticated, continue with the original workflow — do not ask the user to restart.
 
 ## Output Standards
 

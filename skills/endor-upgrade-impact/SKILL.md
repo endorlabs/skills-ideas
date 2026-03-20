@@ -101,4 +101,4 @@ For data source policy, read `references/data-sources.md`.
 |-------|--------|
 | License/permission error | "Upgrade Impact Analysis requires **Endor Labs OSS Pro** license. Visit [app.endorlabs.com](https://app.endorlabs.com) or contact your admin." |
 | Package not in results | No recommended upgrades, or already at recommended version |
-| Auth error | Suggest `/endor-setup` |
+| Auth error | Follow the **Authentication Recovery** steps in `endor-safety.md` global rules |
