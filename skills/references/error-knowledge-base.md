@@ -1,5 +1,18 @@
 # Error Knowledge Base
 
+## Table of Contents
+1. Cross-Ecosystem Errors
+2. NPM
+3. Maven/Gradle
+4. PyPI/Python
+5. Go
+6. Cargo/Rust
+7. NuGet/.NET
+8. RubyGems
+9. Packagist/Composer
+
+---
+
 ## Cross-Ecosystem Errors
 
 ### Private Registry

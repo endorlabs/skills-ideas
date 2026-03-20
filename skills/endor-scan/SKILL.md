@@ -78,7 +78,9 @@ For data source policy, read references/data-sources.md.
 
 ## Error Handling
 
-Never fabricate error diagnoses. Show exact error messages and suggest `/endor-troubleshoot` or `/endor-setup`.
+Show exact error messages — do not guess at causes. Suggest `/endor-troubleshoot` or `/endor-setup` as appropriate.
+
+If a scan partially succeeds (e.g., dependency scan works but SAST fails), present the available results with a note about which scan types failed. Do not discard partial results.
 
 | Error | Action |
 |-------|--------|

@@ -75,7 +75,7 @@ Side-by-side table: overall score, activity, popularity, security, quality, CVE 
 ## Next Steps
 
 1. `/endor-check {package}` - check vulnerabilities
-2. `/endor-upgrade {package}` - upgrade analysis
+2. `/endor-upgrade-impact {package}` - upgrade analysis
 3. `/endor-scan` - see impact on your project
 
 For data source policy, read references/data-sources.md.

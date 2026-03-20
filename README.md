@@ -86,6 +86,7 @@ Restart Claude Code to pick up the MCP server configuration, then try:
 |---------|-------------|
 | `/endor-scan` | Quick security scan (seconds) |
 | `/endor-scan-full` | Deep scan with reachability analysis (minutes) |
+| `/endor-sca` | Dependency vulnerability scan (SCA) |
 | `/endor-sast` | Static application security testing |
 | `/endor-secrets` | Find exposed secrets and credentials |
 | `/endor-container` | Scan Dockerfiles and container images |
@@ -96,7 +97,7 @@ Restart Claude Code to pick up the MCP server configuration, then try:
 |---------|-------------|
 | `/endor-check <package>` | Check a dependency for vulnerabilities |
 | `/endor-score <package>` | View package health scores |
-| `/endor-upgrade <package>` | Predict upgrade impact and breaking changes |
+| `/endor-upgrade-impact <package>` | Predict upgrade impact and breaking changes |
 | `/endor-license` | Check license compliance |
 
 ### Findings & Remediation
@@ -106,6 +107,7 @@ Restart Claude Code to pick up the MCP server configuration, then try:
 | `/endor-findings` | View security findings with filters |
 | `/endor-fix <CVE>` | Get step-by-step remediation guidance |
 | `/endor-explain <CVE>` | Detailed vulnerability information |
+| `/endor-troubleshoot` | Diagnose scan errors and failures |
 
 ### Compliance & Governance
 
@@ -147,6 +149,16 @@ Checks if a specific version of a dependency has known vulnerabilities and sugge
 - `version` (string, required) - Version to check
 
 **Returns:** Vulnerability details including CVE IDs, severity, and recommended upgrade versions.
+
+### check_dependency_for_risks
+
+Same parameters as `check_dependency_for_vulnerabilities`, but also detects **malware**. Prefer this tool when available — it's a strict superset.
+
+### security_review
+
+AI-powered security review of code diffs. Analyzes staged and unstaged changes compared to HEAD for security issues. Requires Enterprise Edition with AI security code review enabled.
+
+**Returns:** Security findings with code-level context and remediation suggestions.
 
 ### get_endor_vulnerability
 
@@ -206,7 +218,7 @@ When configuring scan behavior, prefix variables with `MCP_`. The MCP server str
 
 Hooks are shell scripts that run automatically at specific points in Claude Code's lifecycle. They detect the right moment to invoke an Endor Labs skill and inject reminders into Claude's context.
 
-See [`.claude/hooks/README.md`](.claude/hooks/README.md) for full documentation, event flow diagrams, and testing instructions.
+See [`hooks/README.md`](hooks/README.md) for full documentation, event flow diagrams, and testing instructions.
 
 | Hook | When | What It Does |
 |------|------|--------------|
@@ -221,7 +233,7 @@ See [`.claude/hooks/README.md`](.claude/hooks/README.md) for full documentation,
 
 ## Automatic Security Rules
 
-This project also includes advisory security rules in `.claude/rules/` that guide Claude's behavior:
+This project includes advisory security rules in `rules/` that guide Claude's behavior:
 
 | Rule | Trigger | Action |
 |------|---------|--------|
@@ -263,76 +275,82 @@ This project also includes advisory security rules in `.claude/rules/` that guid
 ## Project Structure
 
 ```
-.claude/
-├── settings.json              # MCP server + hooks configuration
-├── settings.local.json        # Local overrides (gitignored)
-├── hooks/                     # Hooks (route to Endor Labs skills)
-│   ├── README.md              # Hook documentation
-│   ├── check-dep-install.sh        # Dep install → /endor-check
-│   ├── check-manifest-edit.sh      # Manifest edit → /endor-check
-│   ├── suggest-license-check.sh    # Dep install → /endor-license
-│   ├── post-scan-routing.sh        # Scan → /endor-findings → /endor-fix
-│   ├── mcp-error-recovery.sh       # MCP errors → /endor-setup
-│   ├── detect-pr-intent.sh         # PR intent → /endor-review
-│   ├── suggest-endor-tools.sh      # CVE/package → relevant /endor-* skill
-│   └── session-review-reminder.sh  # Session-end → /endor-review reminder
-├── skills/
-│   ├── endor/              # Main router skill
-│   ├── endor-setup/        # Onboarding wizard
-│   ├── endor-demo/         # Demo mode
-│   ├── endor-help/         # Command reference
-│   ├── endor-scan/         # Quick scan
-│   ├── endor-scan-full/    # Full reachability scan
-│   ├── endor-check/        # Dependency check
-│   ├── endor-findings/     # View findings
-│   ├── endor-fix/          # Remediation
-│   ├── endor-upgrade/      # Upgrade impact analysis
-│   ├── endor-explain/      # CVE details
-│   ├── endor-score/        # Package health
-│   ├── endor-secrets/      # Secrets detection
-│   ├── endor-sast/         # Static analysis
-│   ├── endor-license/      # License compliance
-│   ├── endor-review/       # Pre-PR review
-│   ├── endor-sbom/         # SBOM management
-│   ├── endor-cicd/         # CI/CD generation
-│   ├── endor-container/    # Container scanning
-│   ├── endor-policy/       # Policy management
-│   └── endor-api/          # Direct API access
-└── rules/
-    ├── endor-prevent.md           # Post-tool dependency check rule
-    ├── dependency-security.md
-    ├── secrets-detection.md
-    ├── sast-analysis.md
-    ├── license-compliance.md
-    ├── container-security.md
-    └── pr-security-review.md
+skills/                        # Claude Code skills (slash commands)
+├── references/                # Shared reference docs for all skills
+│   ├── cli-parsing.md
+│   ├── data-sources.md
+│   ├── error-knowledge-base.md
+│   ├── install-commands.md
+│   └── reachability-tags.md
+├── endor/                     # Main router skill
+├── endor-setup/               # Onboarding wizard
+├── endor-demo/                # Demo mode
+├── endor-help/                # Command reference
+├── endor-scan/                # Quick scan
+├── endor-scan-full/           # Full reachability scan
+├── endor-sca/                 # SCA dependency scan
+├── endor-check/               # Dependency check
+├── endor-findings/            # View findings
+├── endor-fix/                 # Remediation
+├── endor-upgrade-impact/      # Upgrade impact analysis
+├── endor-explain/             # CVE details
+├── endor-score/               # Package health
+├── endor-secrets/             # Secrets detection
+├── endor-sast/                # Static analysis
+├── endor-license/             # License compliance
+├── endor-review/              # Pre-PR review
+├── endor-sbom/                # SBOM management
+├── endor-cicd/                # CI/CD generation (templates in references/)
+├── endor-container/           # Container scanning
+├── endor-policy/              # Policy management
+├── endor-api/                 # Direct API access
+└── endor-troubleshoot/        # Scan error diagnosis
+hooks/                         # Hooks (route to Endor Labs skills)
+├── README.md
+├── check-dep-install.sh       # Dep install → /endor-check
+├── check-manifest-edit.sh     # Manifest edit → /endor-check
+├── suggest-license-check.sh   # Dep install → /endor-license
+├── post-scan-routing.sh       # Scan → /endor-findings → /endor-fix
+├── mcp-error-recovery.sh      # MCP errors → /endor-setup
+├── detect-pr-intent.sh        # PR intent → /endor-review
+├── suggest-endor-tools.sh     # CVE/package → relevant /endor-* skill
+└── session-review-reminder.sh # Session-end → /endor-review reminder
+rules/                         # Always-on security rules
+├── endor-prevent.md           # Post-tool dependency check rule
+└── endor-safety.md            # MCP safety & usage guardrails
+settings.json                  # MCP server + hooks configuration template
+install.sh                     # Installer (copies into user's ~/.claude/)
+CLAUDE.md                      # Project instructions for Claude Code
+README.md                      # This file
 ```
 
 ## Contributing
 
 ### Adding New Skills
 
-1. Create a new directory under `.claude/skills/`
+1. Create a new directory under `skills/` using kebab-case naming
 2. Add a `SKILL.md` file with YAML frontmatter:
    ```yaml
    ---
    name: skill-name
-   description: |
-     Description of the skill.
-     - MANDATORY TRIGGERS: trigger1, trigger2, trigger3
+   description: >
+     What it does and when to use it. Include specific trigger phrases the user
+     might say. Add "Do NOT use for..." to prevent trigger collisions with
+     adjacent skills.
    ---
    ```
-3. Include Prerequisites, Workflow, Output Format, and Error Handling sections
-4. Test the skill by running the trigger command in Claude Code
+3. Include Workflow, Output Format, and Error Handling sections
+4. Keep SKILL.md under 500 lines — move detailed references to `references/`
+5. Test the skill by running the trigger command in Claude Code
 
 ### Adding New Hooks
 
-1. Create a bash script in `.claude/hooks/` with a descriptive header comment
-2. Make it executable: `chmod +x .claude/hooks/my-hook.sh`
-3. Wire it in `.claude/settings.json` under the appropriate event and matcher
-4. Test with pipe: `echo '{"tool_name":"...","tool_input":{...}}' | .claude/hooks/my-hook.sh`
+1. Create a bash script in `hooks/` with a descriptive header comment
+2. Make it executable: `chmod +x hooks/my-hook.sh`
+3. Wire it in `settings.json` under the appropriate event and matcher
+4. Test with pipe: `echo '{"tool_name":"...","tool_input":{...}}' | hooks/my-hook.sh`
 5. Classify by tier: Block (exit 2), Warn (exit 0 + imperative stdout), Suggest (exit 0 + informational stdout)
-6. See [`.claude/hooks/README.md`](.claude/hooks/README.md) for design principles and patterns
+6. See [`hooks/README.md`](hooks/README.md) for design principles and patterns
 
 ## Links
 

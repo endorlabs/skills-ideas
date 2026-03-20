@@ -37,7 +37,7 @@ Present this reference to the user:
 |---------|-------------|
 | `/endor-check <pkg>` | Check dependency for vulnerabilities |
 | `/endor-score <pkg>` | View package health scores |
-| `/endor-upgrade <pkg>` | Analyze upgrade impact |
+| `/endor-upgrade-impact <pkg>` | Analyze upgrade impact |
 | `/endor-license` | Check license compliance |
 
 ### Findings & Remediation

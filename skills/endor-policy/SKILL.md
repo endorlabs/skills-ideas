@@ -12,6 +12,8 @@ description: >
 
 Create and manage security policies. Requires admin access to the namespace.
 
+**Confirm before creating or modifying policies.** Policy changes affect enforcement for the entire namespace — a "block critical" policy could block all PRs across the org. Always show the user the exact policy filter and action before executing create/update/delete operations.
+
 ## Policy Types
 
 | Type | Purpose |

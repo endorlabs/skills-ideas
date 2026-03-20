@@ -70,7 +70,7 @@ Use `scan` MCP tool:
 
 **CLI fallback** (only if MCP genuinely unavailable):
 ```bash
-endorctl scan --path <ABSOLUTE_PATH> --dependencies --sast --secrets --output-type json 2>/dev/null > /tmp/endor-full.json
+npx -y endorctl scan --path <ABSOLUTE_PATH> --dependencies --sast --secrets --output-type json 2>/dev/null > /tmp/endor-full.json
 ```
 
 On error, report exact error. Do not write cache on failure.
@@ -100,13 +100,13 @@ Present: scanned path, languages, "Full Reachability Analysis", timestamp, reach
 1. `/endor-fix {top-advisory}` - fix reachable critical
 2. `/endor-explain {advisory}` - explain a finding
 3. `/endor-findings reachable` - view all findings
-4. `/endor-upgrade {package}` - upgrade with impact analysis
+4. `/endor-upgrade-impact {package}` - upgrade with impact analysis
 
 For data source policy, read references/data-sources.md.
 
 ## Error Handling
 
-Never fabricate error diagnoses. Show exact error messages.
+Show exact error messages — do not guess at causes.
 
 | Error | Action |
 |-------|--------|

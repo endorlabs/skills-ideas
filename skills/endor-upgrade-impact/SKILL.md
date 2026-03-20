@@ -20,7 +20,7 @@ Find safe dependency upgrades that fix vulnerabilities with minimal risk. Uses p
 The project UUID is often available from a prior scan. Check `.endor/scan-full-results.json` or the scan output first.
 
 ```bash
-endorctl api list --resource Project -n <NAMESPACE> --filter "uuid==\"<PROJECT_UUID>\"" --field-mask="uuid,meta.name" 2>/dev/null
+npx -y endorctl api list --resource Project -n <NAMESPACE> --filter "uuid==\"<PROJECT_UUID>\"" --field-mask="uuid,meta.name" 2>/dev/null
 ```
 
 Or use `get_resource` MCP tool with `resource_type: Project` and `name: {repo_name}`.
@@ -32,7 +32,7 @@ If not found, inform the user and stop.
 Query pre-computed safe upgrades. **Do NOT run a scan.**
 
 ```bash
-endorctl api list -r VersionUpgrade -n <NAMESPACE> \
+npx -y endorctl api list -r VersionUpgrade -n <NAMESPACE> \
   --filter="context.type==CONTEXT_TYPE_MAIN and spec.project_uuid==\"<PROJECT_UUID>\" and spec.upgrade_info.is_best==true and spec.upgrade_info.worth_it==true" \
   --field-mask="uuid,spec.name,spec.upgrade_info.is_best,spec.upgrade_info.is_latest,spec.upgrade_info.from_version,spec.upgrade_info.to_version,spec.upgrade_info.to_version_age_in_days,spec.upgrade_info.total_findings_fixed,spec.upgrade_info.total_findings_introduced,spec.upgrade_info.score_explanation,spec.upgrade_info.worth_it,spec.upgrade_info.upgrade_risk,spec.upgrade_info.direct_dependency_package" \
   --list-all 2>/dev/null
@@ -80,7 +80,7 @@ Fetch CIA details only if user wants to evaluate a high-risk upgrade:
 
 Only fetch if user asks about a HIGH risk upgrade:
 ```bash
-endorctl api list -r VersionUpgrade -n <NAMESPACE> \
+npx -y endorctl api list -r VersionUpgrade -n <NAMESPACE> \
   --filter="context.type==CONTEXT_TYPE_MAIN and spec.project_uuid==\"<PROJECT_UUID>\" and uuid==\"<UUID>\"" \
   --field-mask="spec.upgrade_info.cia_results" 2>/dev/null
 ```

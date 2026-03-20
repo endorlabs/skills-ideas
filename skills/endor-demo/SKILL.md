@@ -70,7 +70,7 @@ Present realistic results tailored to detected project type:
 
 End with: Ready for real results? Run `/endor-setup` or visit https://www.endorlabs.com to sign up free.
 
-## Rules
+## Guidelines
 
 - Clearly label ALL output as **simulated/demo** data
 - Use obviously fake CVE numbers (e.g., CVE-2024-XXXXX)

@@ -46,7 +46,7 @@ Use `scan` MCP tool:
 npx -y endorctl scan --path $(pwd) --dependencies --output-type summary -n <namespace>
 ```
 
-Never fabricate error diagnoses. Show exact errors and suggest `/endor-troubleshoot` or `/endor-setup`.
+Show exact error messages — do not guess at causes. Suggest `/endor-troubleshoot` or `/endor-setup` as appropriate.
 
 ### Step 3: Retrieve Finding Details
 
@@ -77,7 +77,7 @@ Distinguish between direct (in manifest, directly upgradable) and transitive (pu
 
 1. `/endor-fix {top-cve}` - fix critical vulnerabilities
 2. `/endor-check {package} {version}` - check specific package
-3. `/endor-upgrade {package}` - analyze upgrade impact
+3. `/endor-upgrade-impact {package}` - analyze upgrade impact
 4. `/endor-scan-full` - full reachability analysis
 5. `/endor-license` - check dependency licenses
 
@@ -85,7 +85,7 @@ For data source policy, read references/data-sources.md.
 
 ## Error Handling
 
-Never fabricate error diagnoses. Show exact error messages.
+Show exact error messages — do not guess at causes.
 
 | Error | Action |
 |-------|--------|

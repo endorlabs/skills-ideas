@@ -69,3 +69,11 @@ For data source policy, read references/data-sources.md.
 - Use tables for structured data
 - Provide copy-pasteable commands
 - End with suggested next steps
+
+## MCP Fallback Policy
+
+MCP tools are the primary path for all Endor Labs operations. CLI fallback (`npx -y endorctl`) should only be used when the user explicitly confirms MCP is unavailable. Never silently fall back to CLI — if MCP fails, show the error and suggest `/endor-setup`. Always use `npx -y endorctl` (not bare `endorctl`) for CLI commands to ensure auto-installation.
+
+## Error Reporting
+
+Show exact error messages from MCP tools or CLI — do not guess at causes or fabricate diagnoses. For unrecognized errors, suggest `/endor-troubleshoot`.

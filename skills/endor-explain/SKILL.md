@@ -74,7 +74,7 @@ Use `check_dependency_for_risks` (preferred, checks vulnerabilities + malware) o
 ### Remediation
 1. Upgrade to {package}@{fixed_version}
 2. Verify: `/endor-check {package} {fixed_version}`
-3. Check impact: `/endor-upgrade {package} {fixed_version}`
+3. Check impact: `/endor-upgrade-impact {package} {fixed_version}`
 ```
 
 ## For Finding UUID Lookup

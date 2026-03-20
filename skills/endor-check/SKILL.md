@@ -75,7 +75,7 @@ For install commands, read `references/install-commands.md`.
 ### Next Steps
 
 1. `/endor-fix {top-cve}` — Get fix details
-2. `/endor-upgrade {package} {safe_version}` — Check upgrade impact
+2. `/endor-upgrade-impact {package} {safe_version}` — Check upgrade impact
 ```
 
 #### If No Vulnerabilities Found

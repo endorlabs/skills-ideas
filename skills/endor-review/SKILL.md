@@ -119,6 +119,8 @@ For data source policy, read `references/data-sources.md`.
 
 ## Error Handling
 
+If a scan partially succeeds (e.g., dependency check works but SAST fails), present the available results with a note about which checks failed. Do not discard partial results.
+
 | Error | Action |
 |-------|--------|
 | No changes detected | Tell user there are no changes to review |
