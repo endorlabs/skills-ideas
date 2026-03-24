@@ -84,18 +84,20 @@ The MCP server authenticates via browser-based OAuth. On first use, a browser wi
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `ENDOR_NAMESPACE` | Your Endor Labs namespace (organization) | `demo-trial` |
-| `ENDOR_API` | Endor Labs API endpoint | `https://api.endorlabs.com` |
-| `ENDOR_MCP_SERVER_AUTH_MODE` | Authentication method | `google` |
-| `ENDOR_MCP_SERVER_AUTH_TENANT` | SSO tenant (required for `sso` mode) | - |
-| `ENDOR_MCP_SERVER_AUTH_EMAIL` | Auth email (required for `email` mode) | - |
-| `ENDOR_TOKEN` | Pre-existing auth token (skips browser auth) | - |
-| `ENDOR_MCP_SERVER_PORT` | HTTP mode port | `8181` |
-| `ENDOR_MCP_SERVER_USE_HTTP` | Use HTTP/SSE instead of stdio | `false` |
-| `ROOT_DIR` | Root directory for scans | - |
-| `GITHUB_TOKEN` | GitHub API token for code navigation | - |
+**Auth workflow note:** Two mutually exclusive auth workflows exist. **Local Development** uses `~/.endorctl/config.yaml` (via `endorctl init`) with no auth env vars. **Multi-Namespace** uses env vars below with no `config.yaml`. Never use both — it causes an auth error loop. See `/endor-setup` for details.
+
+| Variable | Description | Default | Workflow |
+|----------|-------------|---------|----------|
+| `ENDOR_NAMESPACE` | Your Endor Labs namespace (organization) | `demo-trial` | Multi-Namespace only |
+| `ENDOR_API` | Endor Labs API endpoint | `https://api.endorlabs.com` | Multi-Namespace only |
+| `ENDOR_MCP_SERVER_AUTH_MODE` | Authentication method | `google` | Multi-Namespace only |
+| `ENDOR_MCP_SERVER_AUTH_TENANT` | SSO tenant (required for `sso` mode) | - | Multi-Namespace only |
+| `ENDOR_MCP_SERVER_AUTH_EMAIL` | Auth email (required for `email` mode) | - | Multi-Namespace only |
+| `ENDOR_TOKEN` | Pre-existing auth token (skips browser auth) | - | Either |
+| `ENDOR_MCP_SERVER_PORT` | HTTP mode port | `8181` | Either |
+| `ENDOR_MCP_SERVER_USE_HTTP` | Use HTTP/SSE instead of stdio | `false` | Either |
+| `ROOT_DIR` | Root directory for scans | - | Either |
+| `GITHUB_TOKEN` | GitHub API token for code navigation | - | Either |
 
 ### Scan Environment Variables
 

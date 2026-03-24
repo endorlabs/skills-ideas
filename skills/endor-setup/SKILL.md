@@ -59,9 +59,33 @@ This downloads and runs endorctl without installing it globally. The `-y` flag a
 
 Look for `endor-cli-tools` in the project's `.claude/settings.json`.
 
-### 2.2 If not configured, create the settings
+### 2.2 Choose Authentication Workflow
 
-Create or update `.claude/settings.json` in the project root:
+Ask the user which workflow fits their use case:
+
+| Workflow | Best For | Auth Source |
+|----------|----------|-------------|
+| **Local Development** | Single namespace, stable local dev, most developers | API key in `~/.endorctl/config.yaml` via `endorctl init` |
+| **Multi-Namespace** | Frequent namespace switching, checking multiple repos | Env vars in `settings.json` (`ENDOR_MCP_SERVER_AUTH_MODE`, `ENDOR_NAMESPACE`) |
+
+**These are mutually exclusive.** Using both simultaneously causes an auth error loop. If the user is unsure, recommend **Local Development** — it's simpler and covers most use cases.
+
+### 2.3 Check for conflicting auth sources
+
+Before proceeding, check for conflicts:
+
+```bash
+test -f ~/.endorctl/config.yaml && echo "config.yaml exists"
+```
+
+- If `config.yaml` exists and user chose **Multi-Namespace**: warn that it must be removed (`rm -rf ~/.endorctl`) to avoid conflicts
+- If `config.yaml` does not exist and user chose **Local Development**: good — `endorctl init` will create it in Step 3
+
+### 2.4 Create settings.json
+
+Create or update `.claude/settings.json` in the project root. Use the template matching the chosen workflow:
+
+**Local Development** (no auth env vars — auth comes from `config.yaml`):
 
 ```json
 {
@@ -72,12 +96,27 @@ Create or update `.claude/settings.json` in the project root:
         "-y",
         "endorctl",
         "ai-tools",
-        "mcp-server",
-        "--config-path",
-        ".endorctl-mcp"
+        "mcp-server"
+      ]
+    }
+  }
+}
+```
+
+**Multi-Namespace** (auth via env vars — no `config.yaml`):
+
+```json
+{
+  "mcpServers": {
+    "endor-cli-tools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "endorctl",
+        "ai-tools",
+        "mcp-server"
       ],
       "env": {
-        "MCP_ENDOR_CONFIG_PATH": ".endorctl-mcp",
         "ENDOR_MCP_SERVER_AUTH_MODE": "google",
         "ENDOR_API": "https://api.endorlabs.com",
         "ENDOR_NAMESPACE": "demo-trial"
@@ -87,20 +126,26 @@ Create or update `.claude/settings.json` in the project root:
 }
 ```
 
-### 2.3 Create the config directory
-
-```bash
-mkdir -p .endorctl-mcp
-touch .endorctl-mcp/config.yaml
-```
-
-### 2.4 Important: Restart Required
+### 2.5 Important: Restart Required
 
 Tell the user: **You must restart Claude Code after creating or modifying settings.json for the MCP server to become available.**
 
-## Step 3: Choose Authentication Method
+## Step 3: Authenticate
 
-Ask the user which authentication provider they use:
+### Local Development workflow
+
+1. Ask the user for their auth mode (`google`, `github`, `api-key`) and namespace
+2. Run `endorctl init` to generate `~/.endorctl/config.yaml`:
+
+```bash
+npx -y endorctl init --auth-mode=<MODE>
+```
+
+3. The config.yaml will store the API key and namespace. The MCP server reads it automatically — no env vars needed.
+
+### Multi-Namespace workflow
+
+1. Ask the user which authentication provider they use:
 
 | Provider | `ENDOR_MCP_SERVER_AUTH_MODE` | Additional Config |
 |----------|-------------------------------|-------------------|
@@ -110,9 +155,8 @@ Ask the user which authentication provider they use:
 | Enterprise SSO | `sso` | Also set `ENDOR_MCP_SERVER_AUTH_TENANT` |
 | Email | `email` | Also set `ENDOR_MCP_SERVER_AUTH_EMAIL` |
 
-Update the `ENDOR_MCP_SERVER_AUTH_MODE` in settings.json accordingly.
-
-On first MCP tool call, the server will automatically open a browser window for authentication. The token is cached for 1 hour.
+2. Update the `ENDOR_MCP_SERVER_AUTH_MODE` in settings.json accordingly.
+3. On first MCP tool call, the server will automatically open a browser window for authentication. The token is cached for 1 hour.
 
 ### For CI/CD or headless environments
 
@@ -131,17 +175,21 @@ export ENDOR_TOKEN=<your-token>
 
 ## Step 4: Configure Namespace
 
-### 4.1 Ask for their namespace
+### Local Development workflow
 
-The namespace is their Endor Labs organization name. They can find it at [app.endorlabs.com](https://app.endorlabs.com) in the top-left corner.
+The namespace was configured during `endorctl init` in Step 3. Verify it:
 
-### 4.2 Update settings.json
+```bash
+cat ~/.endorctl/config.yaml
+```
 
-Replace `"demo-trial"` with their actual namespace in the `ENDOR_NAMESPACE` field.
+If wrong, re-run `npx -y endorctl init`.
 
-If they don't have a namespace yet, `demo-trial` provides limited demo access.
+### Multi-Namespace workflow
 
-### 4.3 For new users without an account
+Replace `"demo-trial"` with the user's actual namespace in the `ENDOR_NAMESPACE` field of settings.json. The namespace is their Endor Labs organization name, found at [app.endorlabs.com](https://app.endorlabs.com) in the top-left corner.
+
+### For new users without an account
 
 Direct them to:
 - Sign up at [endorlabs.com](https://www.endorlabs.com) (free tier available)
@@ -192,7 +240,8 @@ Your Endor Labs MCP server is configured and ready. Here's what to try:
 | `npx: command not found` | Install Node.js v18+ (npx is bundled) |
 | `endorctl: not found via npx` | Check internet connection; run `npx -y endorctl --version` |
 | MCP tools not showing in Claude Code | Restart Claude Code after editing settings.json |
-| Browser auth not opening | Check `ENDOR_MCP_SERVER_AUTH_MODE` is set correctly |
+| Browser auth not opening | Check `ENDOR_MCP_SERVER_AUTH_MODE` is set correctly (Multi-Namespace workflow only) |
+| Auth error loop / persistent auth failures | Conflict between `config.yaml` and env vars in settings.json — choose one workflow and remove the other (see Authentication Workflows in Step 2.2) |
 | `namespace not found` | Verify ENDOR_NAMESPACE matches your org name at app.endorlabs.com |
 | `permission denied` | Verify your account has access to the namespace |
 | Timeout on first run | First `npx` run downloads the package - this may take 30-60 seconds |

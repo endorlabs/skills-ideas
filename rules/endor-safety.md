@@ -26,15 +26,45 @@ Always-on guardrails for Endor Labs MCP tools. These apply every session, whethe
 - CLI fallback (`npx -y endorctl`) should only be used when the user explicitly confirms MCP is unavailable
 - Always use `npx -y endorctl` (not bare `endorctl`) to ensure auto-installation
 
+## Authentication Workflows
+
+Two mutually exclusive auth workflows exist. Using both simultaneously causes an error loop where `endorctl` finds two valid auth sources and cannot resolve which to use.
+
+| Workflow | Auth Source | Setup | When to Use |
+|----------|-----------|-------|-------------|
+| **Local Development** | `~/.endorctl/config.yaml` (API key) | `endorctl init` | Single namespace, stable local dev |
+| **Multi-Namespace** | Env vars in `settings.json` / `mcp.json` | Set `ENDOR_MCP_SERVER_AUTH_MODE`, `ENDOR_NAMESPACE`, `ENDOR_API` | Frequent namespace switching, no local config file |
+
+**Never mix both.** If `config.yaml` exists, there must be no auth env vars (`ENDOR_MCP_SERVER_AUTH_MODE`, `ENDOR_NAMESPACE`, `ENDOR_API`) in `settings.json`/`mcp.json`. If auth env vars are set, there must be no `config.yaml`.
+
+## Authentication Conflict Detection
+
+Before any auth recovery attempt, check for the dual-source conflict:
+
+1. Check if `~/.endorctl/config.yaml` exists: `test -f ~/.endorctl/config.yaml && echo "exists"`
+2. Check if `settings.json` or `mcp.json` contains auth env vars: look for `ENDOR_MCP_SERVER_AUTH_MODE`, `ENDOR_NAMESPACE`, or `ENDOR_API` in the MCP server `env` block
+
+**If BOTH are present** — this is the conflict. Do not attempt to re-authenticate until it is resolved:
+
+1. Tell the user: "Authentication conflict detected — both a config file (`~/.endorctl/config.yaml`) and environment variables in your MCP settings are providing auth credentials. This causes an error loop."
+2. Ask which workflow they want:
+   - **Local Development**: keep `config.yaml`, remove auth env vars from `settings.json`
+   - **Multi-Namespace**: remove `config.yaml`, keep env vars in `settings.json`
+3. Apply the chosen cleanup, then proceed with auth recovery below.
+
 ## Authentication Recovery
 
 If any `endorctl` command or MCP tool fails with an auth/credentials error (e.g. "no credentials found", "invalid permissions", token expired), do NOT stop and suggest `/endor-setup`. Instead, handle it inline:
 
-1. Tell the user: "Authentication is missing or expired. I'll re-authenticate now."
-2. Ask the user to select their auth mode from: `google`, `github`, `api-key`
-3. Ask the user which namespace/tenant to use (show the list if available from a prior attempt)
-4. Run: `echo "<TENANT_NUMBER>" | npx -y endorctl init --auth-mode=<SELECTED_AUTH_MODE>`
-5. Once authenticated, continue with the original workflow — do not ask the user to restart.
+1. **Run conflict detection first** (see above). If a conflict is found, resolve it before continuing.
+2. **Determine the active workflow:**
+   - If `~/.endorctl/config.yaml` exists (and no auth env vars) → **Local Development** workflow
+   - If auth env vars are set in `settings.json` (and no `config.yaml`) → **Multi-Namespace** workflow
+   - If neither exists → ask the user which workflow to set up (see Authentication Workflows table)
+3. **Recover based on workflow:**
+   - **Local Development**: Run `npx -y endorctl init --auth-mode=<MODE>` to refresh the config.yaml. Ask user for auth mode (`google`, `github`, `api-key`) and namespace if needed.
+   - **Multi-Namespace**: Verify env vars are correct in `settings.json`. Ask user to confirm `ENDOR_MCP_SERVER_AUTH_MODE` and `ENDOR_NAMESPACE` values. Restart MCP connection.
+4. Once authenticated, continue with the original workflow — do not ask the user to restart.
 
 ## Output Standards
 

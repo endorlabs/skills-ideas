@@ -39,6 +39,8 @@ No match? Check cross-ecosystem patterns (GitHub Packages, registry/artifactory,
 
 ### Step 2: Classify Error Category
 
+**Auth Conflict** -- persistent auth error loop, "multiple authentication", "conflicting auth", "invalid permissions" or repeated auth failures despite valid credentials. Root cause: both `~/.endorctl/config.yaml` AND auth env vars (`ENDOR_MCP_SERVER_AUTH_MODE`, `ENDOR_NAMESPACE`, `ENDOR_API`) in `settings.json`/`mcp.json` are present simultaneously.
+
 **Private Registry** -- package not found, auth failures (401/403), SSH/Git credential errors, connection refused/timeout, missing registry config.
 
 **Toolchain** -- language/SDK version mismatches, missing SDKs/build tools, lock file format issues, compiler/build config errors.
@@ -86,6 +88,11 @@ Read `references/error-knowledge-base.md` and match the error text against patte
 4. Note if fixing one may resolve others
 
 ## Common Resolution Patterns
+
+**Auth Conflict**: Check if `~/.endorctl/config.yaml` exists AND `settings.json`/`mcp.json` contains auth env vars. If both present, user must choose one workflow:
+- **Local Development**: keep `config.yaml`, remove `ENDOR_MCP_SERVER_AUTH_MODE`/`ENDOR_NAMESPACE`/`ENDOR_API` from settings.json env block
+- **Multi-Namespace**: delete `~/.endorctl/config.yaml` (or `rm -rf ~/.endorctl`), keep env vars in settings.json
+Then restart MCP connection and retry. See `/endor-setup` Step 2.2 for full workflow details.
 
 **Private Registry**: Check if package is private -> configure [Private Package Registry](https://docs.endor.ai/docs/integrations/private-package-registries) or set CI credentials -> verify registry is internet-accessible from cloud.
 

@@ -85,7 +85,7 @@ If a scan partially succeeds (e.g., dependency scan works but SAST fails), prese
 | Error | Action |
 |-------|--------|
 | Auth error / browser opens | Complete browser login, retry. Do not bypass to CLI |
-| Missing `ENDOR_MCP_SERVER_AUTH_MODE` | Add to `.claude/settings.json`, restart, or `/endor-setup` |
+| Missing auth config | Run `/endor-setup` to choose an auth workflow (Local Development or Multi-Namespace). Do not add `ENDOR_MCP_SERVER_AUTH_MODE` if `~/.endorctl/config.yaml` exists — that causes a conflict. |
 | No manifest found | List supported languages |
 | Scan timeout | Use fewer scan_types or scan subdirectory |
 | MCP unavailable | `/endor-setup`. CLI fallback only if user confirms |
