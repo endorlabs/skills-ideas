@@ -1,4 +1,5 @@
 {
+  "_comment_auth": "AUTH WORKFLOW: Choose ONE method, never both. Local Development: run 'endorctl init' and leave the env block empty. Multi-Namespace: set env vars below and do NOT run 'endorctl init'. See /endor-setup for details.",
   "mcpServers": {
     "endor-cli-tools": {
       "command": "npx",
@@ -9,6 +10,7 @@
         "mcp-server"
       ],
       "env": {
+        "_comment": "Multi-Namespace workflow only. Remove these 3 vars if using Local Development workflow (endorctl init).",
         "ENDOR_NAMESPACE": "{your-namespace}",
         "ENDOR_API": "https://api.endorlabs.com",
         "ENDOR_MCP_SERVER_AUTH_MODE": "{google | github | gitlab | sso}"
