@@ -38,7 +38,28 @@ fi
 
 # Detect auth-related errors
 if echo "$ERROR_TEXT" | grep -qiP '(auth(entication|orization)?\s*(fail|error|expire|invalid|denied)|token\s*(expire|invalid|missing)|401|403|unauthenticated|unauthorized|login\s*required|credential|ENDOR_TOKEN)' 2>/dev/null; then
-  cat <<EOF
+  # Check for dual-auth conflict: config.yaml + env vars both present
+  HAS_CONFIG_FILE=false
+  if [[ -f "$HOME/.endorctl/config.yaml" ]]; then
+    HAS_CONFIG_FILE=true
+  fi
+
+  if [[ "$HAS_CONFIG_FILE" == "true" ]]; then
+    cat <<EOF
+[HOOK: Endor Labs Authentication Error — Possible Config Conflict]
+The MCP tool ($TOOL_NAME) failed with an authentication error.
+A config file (~/.endorctl/config.yaml) was detected. If your settings.json also
+contains auth env vars (ENDOR_MCP_SERVER_AUTH_MODE, ENDOR_NAMESPACE, ENDOR_API),
+this creates a conflict where two auth methods compete, causing an error loop.
+
+Resolution: choose ONE auth workflow and remove the other.
+- Local Development: keep config.yaml, remove auth env vars from settings.json
+- Multi-Namespace: delete ~/.endorctl/config.yaml, keep env vars in settings.json
+
+Run /endor-setup to reconfigure, or /endor-troubleshoot to diagnose further.
+EOF
+  else
+    cat <<EOF
 [HOOK: Endor Labs Authentication Error]
 The MCP tool ($TOOL_NAME) failed with an authentication error.
 Run /endor-setup to reconfigure authentication, or check that:
@@ -46,6 +67,7 @@ Run /endor-setup to reconfigure authentication, or check that:
 - Your auth token hasn't expired (re-authenticate via browser)
 - ENDOR_MCP_SERVER_AUTH_MODE matches your login method
 EOF
+  fi
   exit 0
 fi
 
