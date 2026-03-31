@@ -25,7 +25,7 @@ PROMPT=$(echo "$INPUT" | jq -r '.prompt // empty')
 PROMPT_LOWER=$(echo "$PROMPT" | tr '[:upper:]' '[:lower:]')
 
 # Skip if user is already invoking an endor skill
-if echo "$PROMPT_LOWER" | grep -qP '(/endor|endor-check|endor-explain|endor-score|endor-demo|endor-fix|endor-scan|endor-review|endor-sast|endor-secrets|endor-license|endor-container|endor-cicd)'; then
+if echo "$PROMPT_LOWER" | grep -qP '(/endor|endor-check|endor-explain|endor-score|endor-demo|endor-fix|endor-scan|endor-review|endor-sast|endor-ai-sast|endor-secrets|endor-license|endor-container|endor-cicd)'; then
   exit 0
 fi
 

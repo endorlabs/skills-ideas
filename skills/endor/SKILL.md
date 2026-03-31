@@ -31,6 +31,7 @@ Detect user intent and route to the appropriate specialized skill.
 | SCA, vulnerable dependencies | `/endor-sca` |
 | Secrets scan, exposed keys | `/endor-secrets` |
 | SAST, static analysis | `/endor-sast` |
+| AI SAST results, AI static analysis | `/endor-ai-sast` |
 | License check/compliance | `/endor-license` |
 | PR review, pre-merge check | `/endor-review` |
 | SBOM | `/endor-sbom` |

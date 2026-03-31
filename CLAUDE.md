@@ -133,7 +133,7 @@ This repo uses Claude Code hooks to route to Endor Labs skills at the right mome
 ```
 skills/          - Claude Code skills (slash commands)
   references/    - Shared reference docs for all skills
-  endor-*/       - Individual skill directories (23 skills)
+  endor-*/       - Individual skill directories (24 skills)
 hooks/           - Hooks (route to Endor Labs skills at the right moments)
 rules/           - Automatic security rules
 settings.json    - MCP server and hooks configuration template
