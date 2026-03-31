@@ -5,7 +5,8 @@ description: >
   says "SAST scan", "find SQL injection", "check for XSS", "static analysis", "endor
   sast", "code security scan", or wants to find injection flaws, hardcoded credentials,
   and insecure patterns in source code. Do NOT use for dependency vulnerabilities
-  (/endor-sca) or secrets scanning (/endor-secrets).
+  (/endor-sca), secrets scanning (/endor-secrets), or viewing pre-computed AI SAST
+  findings (/endor-ai-sast).
 ---
 
 # Endor Labs SAST Scanner

@@ -88,6 +88,7 @@ Restart Claude Code to pick up the MCP server configuration, then try:
 | `/endor-scan-full` | Deep scan with reachability analysis (minutes) |
 | `/endor-sca` | Dependency vulnerability scan (SCA) |
 | `/endor-sast` | Static application security testing |
+| `/endor-ai-sast` | View AI-powered SAST findings from platform |
 | `/endor-secrets` | Find exposed secrets and credentials |
 | `/endor-container` | Scan Dockerfiles and container images |
 
@@ -297,6 +298,7 @@ skills/                        # Claude Code skills (slash commands)
 ├── endor-score/               # Package health
 ├── endor-secrets/             # Secrets detection
 ├── endor-sast/                # Static analysis
+├── endor-ai-sast/             # AI-powered SAST findings
 ├── endor-license/             # License compliance
 ├── endor-review/              # Pre-PR review
 ├── endor-sbom/                # SBOM management
