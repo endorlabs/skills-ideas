@@ -15,31 +15,45 @@ By using this software, you acknowledge that you have read this disclaimer, unde
 - **Claude Code** installed and running
 - An **Endor Labs account** (free tier available at [endorlabs.com](https://www.endorlabs.com))
 
-### 1. Install the MCP Server
+### Installation
 
-No manual installation needed. The MCP server runs via `npx` using the published `endorctl` npm package. Just ensure Node.js is installed:
+Clone this repo, then symlink the skills, rules, and hooks into your Claude Code config:
 
 ```bash
-# Verify Node.js is available
-node --version   # v18+ required
-npx --version    # comes with Node.js
+# Option A: User-level install (available in all projects, auto-updates with git pull)
+git clone https://github.com/endorlabs/endor-solutions-claude-skills.git /path/to/endor-skills
+ln -sf /path/to/endor-skills/skills ~/.claude/skills
+ln -sf /path/to/endor-skills/rules ~/.claude/rules
+ln -sf /path/to/endor-skills/hooks ~/.claude/hooks
 ```
 
-### 2. Configure Claude Code
+```bash
+# Option B: Project-level install (team can share via git)
+cp -r /path/to/endor-skills/skills .claude/skills
+cp -r /path/to/endor-skills/rules .claude/rules
+cp -r /path/to/endor-skills/hooks .claude/hooks
+```
 
-The `.claude/settings.json` in this repository is already configured with the Endor Labs MCP server. If you're setting this up in a new project, create `.claude/settings.json`:
+### Configure the MCP Server
+
+Copy the provided `settings.json` into your `.claude/` directory, or merge it with your existing one:
+
+```bash
+# If you don't have a settings.json yet:
+cp path/to/endor-solutions-claude-skills/settings.json ~/.claude/settings.json
+
+# Then edit it to set your namespace:
+# Replace "your-namespace" with your Endor Labs namespace
+```
+
+The MCP server runs via `npx` — no separate installation needed. The settings.json configures it like this:
 
 ```json
 {
   "mcpServers": {
     "endor-cli-tools": {
       "command": "npx",
-      "args": [
-        "-y",
-        "endorctl",
-        "ai-tools",
-        "mcp-server"
-      ],
+      "args": ["-y", "endorctl", "ai-tools", "mcp-server"],
       "env": {
         "ENDOR_NAMESPACE": "your-namespace",
         "ENDOR_API": "https://api.endorlabs.com",
@@ -50,19 +64,15 @@ The `.claude/settings.json` in this repository is already configured with the En
 }
 ```
 
-### 3. Authenticate
+### Authenticate
 
 On first use, the MCP server will open a browser window for authentication. Sign in with your preferred provider (Google, GitHub, GitLab, SSO, or email).
 
 If you don't have an account yet, run `/endor-demo` in Claude Code to see a demo with simulated data, or sign up at [endorlabs.com](https://www.endorlabs.com).
 
-### 4. Set Your Namespace
+### Start Using
 
-Replace `your-namespace` in settings.json with your Endor Labs namespace (your organization name). If you don't set one, it defaults to `demo-trial`.
-
-### 5. Start Using
-
-Restart Claude Code to pick up the MCP server configuration, then try:
+Restart Claude Code to pick up the configuration, then try:
 
 ```
 /endor-scan          # Scan your repository for security issues
@@ -321,7 +331,6 @@ rules/                         # Always-on security rules
 ├── endor-prevent.md           # Post-tool dependency check rule
 └── endor-safety.md            # MCP safety & usage guardrails
 settings.json                  # MCP server + hooks configuration template
-install.sh                     # Installer (copies into user's ~/.claude/)
 CLAUDE.md                      # Project instructions for Claude Code
 README.md                      # This file
 ```

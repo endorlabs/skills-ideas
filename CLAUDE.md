@@ -137,7 +137,6 @@ skills/          - Claude Code skills (slash commands)
 hooks/           - Hooks (route to Endor Labs skills at the right moments)
 rules/           - Automatic security rules
 settings.json    - MCP server and hooks configuration template
-install.sh       - Installer (copies/symlinks into user's ~/.claude/)
 CLAUDE.md        - Project instructions for Claude Code
 ```
 
