@@ -13,6 +13,15 @@ Always-on guardrails for Endor Labs MCP tools. These apply every session, whethe
 - Distinguish between "no vulnerabilities found" (scan completed clean) and "scan returned no results" (possible auth/config issue)
 - When reporting dependency vulnerabilities, distinguish direct vs transitive dependencies
 
+## Shell and Git (Claude Code)
+
+When running **Git from Bash**, do **not** use compound commands like `cd … && git …`. Claude Code may require approval for that pattern (bare-repository attack guard).
+
+- Prefer **`git -C <absolute-path-to-repo> <subcommand>`** so the repository is chosen without changing directory in the shell string.
+- Or run **`git`** with the tool/shell **working directory** already set to the repo, still with **no `cd` in the command**.
+
+Applies to any workflow that invokes Git (staged file lists, diffs, status), not only a single skill.
+
 ## Tool Usage
 
 - Prefer `check_dependency_for_risks` over `check_dependency_for_vulnerabilities` — the `_risks` variant also detects malware
