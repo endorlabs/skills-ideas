@@ -6,6 +6,7 @@ Always-on guardrails for Endor Labs MCP tools. These apply every session, whethe
 
 - Confirm with the user before creating, updating, or deleting policies, exceptions, or other resources via MCP or CLI `api create`/`api delete` operations — these affect enforcement for the entire namespace
 - Never pass sensitive data (credentials, tokens, secrets) in API filter strings or command arguments
+- When reporting **secret or credential findings**, do **not** print the **secret value**, matched literal, or code snippets that would expose it — show **type, severity, description, and location** (e.g. file and line) only
 
 ## Data Quality
 
@@ -21,6 +22,11 @@ When running **Git from Bash**, do **not** use compound commands like `cd … &&
 - Or run **`git`** with the tool/shell **working directory** already set to the repo, still with **no `cd` in the command**.
 
 Applies to any workflow that invokes Git (staged file lists, diffs, status), not only a single skill.
+
+### Secret-bearing paths
+
+- Do **not** run **`git show <ref>:<path>`** (or similar) for content that may include **credentials** in a way that **prints the blob** to Bash/tool output — transcripts will capture it.
+- Pipe into a **quiet** matcher and use **exit status only** (e.g. **`… | grep -qF -f <pattern-file>`** then **`rm` the file**). Avoid embedding the raw secret in the **command string** when the UI logs commands; prefer a **short-lived pattern file** (restricted mode) over inline literals.
 
 ## Tool Usage
 
