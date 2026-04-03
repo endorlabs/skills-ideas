@@ -6,12 +6,27 @@ Always-on guardrails for Endor Labs MCP tools. These apply every session, whethe
 
 - Confirm with the user before creating, updating, or deleting policies, exceptions, or other resources via MCP or CLI `api create`/`api delete` operations — these affect enforcement for the entire namespace
 - Never pass sensitive data (credentials, tokens, secrets) in API filter strings or command arguments
+- When reporting **secret or credential findings**, do **not** print the **secret value**, matched literal, or code snippets that would expose it — show **type, severity, description, and location** (e.g. file and line) only
 
 ## Data Quality
 
 - When presenting vulnerability findings, always show reachability status alongside severity when the data is available — a critical unreachable vulnerability is lower priority than a high reachable one
 - Distinguish between "no vulnerabilities found" (scan completed clean) and "scan returned no results" (possible auth/config issue)
 - When reporting dependency vulnerabilities, distinguish direct vs transitive dependencies
+
+## Shell and Git (Claude Code)
+
+When running **Git from Bash**, do **not** use compound commands like `cd … && git …`. Claude Code may require approval for that pattern (bare-repository attack guard).
+
+- Prefer **`git -C <absolute-path-to-repo> <subcommand>`** so the repository is chosen without changing directory in the shell string.
+- Or run **`git`** with the tool/shell **working directory** already set to the repo, still with **no `cd` in the command**.
+
+Applies to any workflow that invokes Git (staged file lists, diffs, status), not only a single skill.
+
+### Secret-bearing paths
+
+- Do **not** run **`git show <ref>:<path>`** (or similar) for content that may include **credentials** in a way that **prints the blob** to Bash/tool output — transcripts will capture it.
+- Pipe into a **quiet** matcher and use **exit status only** (e.g. **`… | grep -qF -f <pattern-file>`** then **`rm` the file**). Avoid embedding the raw secret in the **command string** when the UI logs commands; prefer a **short-lived pattern file** (restricted mode) over inline literals.
 
 ## Tool Usage
 
