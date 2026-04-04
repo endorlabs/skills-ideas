@@ -177,13 +177,15 @@ export ENDOR_TOKEN=<your-token>
 
 ### Local Development workflow
 
-The namespace was configured during `endorctl init` in Step 3. Verify it:
+The namespace was configured during `endorctl init` in Step 3.
 
-```bash
-cat ~/.endorctl/config.yaml
-```
+**Never print `~/.endorctl/config.yaml` in Bash or chat** — it contains **live API credentials**. Tool transcripts log stdout, so **`cat`**, **`grep`** across the file, or **`grep -v '…'`** “redaction” **still leaks** values (e.g. **`ENDOR_API_CREDENTIALS_KEY`** / **`SECRET`** are not reliably stripped).
 
-If wrong, re-run `npx -y endorctl init`.
+**Safe verification:**
+- File exists: `test -f ~/.endorctl/config.yaml && echo "config.yaml present"`
+- Namespace: ask the user to confirm it matches **[app.endorlabs.com](https://app.endorlabs.com)** (top-left). **Do not** dump YAML to verify.
+
+If the namespace is wrong, re-run `npx -y endorctl init`.
 
 ### Multi-Namespace workflow
 
