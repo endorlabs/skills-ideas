@@ -6,6 +6,7 @@ Always-on guardrails for Endor Labs MCP tools. These apply every session, whethe
 
 - Confirm with the user before creating, updating, or deleting policies, exceptions, or other resources via MCP or CLI `api create`/`api delete` operations — these affect enforcement for the entire namespace
 - Never pass sensitive data (credentials, tokens, secrets) in API filter strings or command arguments
+- **Never** print **`~/.endorctl/config.yaml`** (or similar Endor credential files) via Bash — **no `cat`**, **no full-file `grep`**, **no `grep -v` redaction** (it fails and exposes **`ENDOR_API_CREDENTIALS_*`**, tokens, etc. in transcripts). Use **`test -f … && echo exists`**, **`/endor-setup`**, or the Endor web UI — not raw config content
 - When reporting **secret or credential findings**, do **not** print the **secret value**, matched literal, or code snippets that would expose it — show **type, severity, description, and location** (e.g. file and line) only
 
 ## Data Quality

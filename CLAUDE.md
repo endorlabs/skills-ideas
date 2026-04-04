@@ -86,6 +86,8 @@ The MCP server authenticates via browser-based OAuth. On first use, a browser wi
 
 **Auth workflow note:** Two mutually exclusive auth workflows exist. **Local Development** uses `~/.endorctl/config.yaml` (via `endorctl init`) with no auth env vars. **Multi-Namespace** uses env vars below with no `config.yaml`. Never use both — it causes an auth error loop. See `/endor-setup` for details.
 
+**Security:** Never run **`cat ~/.endorctl/config.yaml`** (or `grep`/`grep -v` it) in Bash — that file contains API credentials and Claude logs tool output. Use **`test -f`** for existence only; see **`rules/endor-safety.md`**.
+
 | Variable | Description | Default | Workflow |
 |----------|-------------|---------|----------|
 | `ENDOR_NAMESPACE` | Your Endor Labs namespace (organization) | `demo-trial` | Multi-Namespace only |
