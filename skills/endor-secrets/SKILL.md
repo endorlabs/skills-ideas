@@ -30,80 +30,129 @@ description: >
 
 ## Workflow
 
-### Step 1: Run Secrets Scan
+**Route by intent** — If the user’s wording indicates **pre-commit** (hook, “before I commit”, “only my staged changes”, etc.), follow **§ Pre-commit / staged-only path** only. Otherwise follow **§ Default path (full repo or directory)**.
 
-**Default (repo or directory scope)** — Use `scan` MCP tool:
-- `path`: absolute path to repo root (or specific directory)
-- `scan_types`: `["secrets"]`
-- `scan_options`: `{ "quick_scan": true }`
+---
 
-**Pre-commit / staged files only** — When the user’s wording indicates **pre-commit** (hook, “before I commit”, “only my staged changes”, etc.), use the same `scan` call but narrow the scan with `include_path`, then **only present findings that are not already present on the base branch of the branch you are on** — i.e. the branch you compare against to decide what already existed before your changes (see filtering below).
+### Pre-commit / staged-only path
 
-1. **Collect staged paths** — Run **`git -C <absolute-repo-root> diff --cached --name-only`**, following **Shell and Git (Claude Code)** in `rules/endor-safety.md` (avoid `cd … && git …`). Skip empty lines. If there is no output, nothing is staged — tell the user and do not call `scan` for a staged-only run.
-2. **Call `scan`** — Add those paths to `scan_options` alongside `quick_scan`, for example:
+Use this block **end-to-end** for staged / pre-commit secrets checks. **Do not** use the **`scan` MCP tool** here.
 
-```json
-{
-  "path": "/absolute/path/to/repo/root",
-  "scan_types": ["secrets"],
-  "scan_options": {
-    "quick_scan": true,
-    "include_path": ["<file1>", "<file2>"]
-  }
-}
+**What `endorctl` covers** — **`--pre-commit-checks`** scopes to **staged** changes and **filters out findings that only exist on the base branch**. **Do not** add **`git show`**, **`grep`**, or other manual base-branch logic.
+
+1. **Run `endorctl`** — **`npx -y endorctl`** (see **`CLAUDE.md`** / **`/endor-setup`**). **`--path`** = **absolute** repository root. Follow **Shell and Git** in **`rules/endor-safety.md`** (**`git -C`**, avoid **`cd … &&`** where it causes issues).
+
+```bash
+npx -y endorctl scan --path <absolute-repo-root> --secrets --pre-commit-checks -n <namespace>
 ```
 
-Set `path` to the repository root; use staged paths for `include_path` as Git emits them (typically repo-relative).
+- **Multi-Namespace:** **`-n <namespace>`** matches **`ENDOR_NAMESPACE`** (**`CLAUDE.md`**).
+- **Local Development** (**`endorctl init`** / **`~/.endorctl/config.yaml`**): omit **`-n`** if config pins the namespace.
+- **Do not** use **`--output-type`** with **`--pre-commit-checks`** (unsupported). Use the CLI default output.
 
-3. **Resolve the base branch ref (git only)** — Choose `<base-ref>`: the branch your **current** branch is **based on** for this comparison (usually the default branch, e.g. `main`). Prefer **`git -C <absolute-repo-root> symbolic-ref refs/remotes/origin/HEAD`**: it resolves to something like `refs/remotes/origin/main` — use **`origin/main`** (or whatever short name that implies) as `<base-ref>`. If that fails (no `origin`, or no remote HEAD), try **`git -C <absolute-repo-root> rev-parse --verify`** against **`origin/main`**, then **`origin/master`**, then **`origin/develop`**. Ask the user which ref to use if none resolve. All **`git`** invocations use **`git -C <absolute-repo-root>`** (see `rules/endor-safety.md`).
+2. **Hydrate (optional)** — If output includes **finding UUIDs**, call **`get_resource`** (`resource_type`: **`Finding`**) per UUID. **Never** print raw secret values. If no UUIDs, parse **file / line / …** from CLI text only — **do not** invent fields.
 
-   **Remote (`origin/main`) vs local (`main`)** — **`origin/main`** is a *remote-tracking* ref: it reflects the last **`git fetch`** from `origin` and works even when you **never** have a local `main` checked out (typical feature-only workflows). Local **`main`** may not exist, or may be **stale** if you have not merged/rebased/pull recently. Prefer **`origin/...`** for a stable default; use **`main`** only when it exists and you explicitly want to compare against that local branch (e.g. it is current).
+3. **Present** — Use **§ Pre-commit presentation** in **Step 2: Present results** (two-column table, **Scan mode** line, no **Detail** blocks unless the CLI actually provides them).
 
-4. **Hydrate each finding** — For **each** finding UUID returned by `scan`, call **`get_resource`** with **`resource_type`: `Finding`** to obtain the **file path**, **type**, **severity**, **description**, and the **detected secret value** only as needed for step 5. Treat any raw secret material as **internal**: use it for base-branch comparison **only** — **never** repeat it in user-visible output.
+---
 
-5. **Filter against base (no secret bytes in Bash output)** — For each hydrated finding, let `<path>` be the repo-relative file path and `<secret>` be the same string the scanner reported (internal use only). **Never** run bare **`git show <base-ref>:<path>`** and let stdout reach the Bash tool: transcripts log that output and **will expose every line of the file**, including secrets.
+### Default path (full repo or directory)
 
-   Use an **exit-code-only** check so the tool sees **no file body**:
-   - Write **`<secret>`** to a **short-lived file** (e.g. `mktemp` under the repo’s **`.git/`**, mode `600`), then run:  
-     **`git -C <absolute-repo-root> show <base-ref>:<path> 2>/dev/null | grep -qF -f <pattern-file>`**  
-     (quote `<path>` if needed; `<base-ref>:<path>` must be a valid **`ref:path`** — not `:path` alone.)
-   - **Immediately `rm -f <pattern-file>`** after the command (even on failure).
-   - **Interpret `grep`’s exit status:** **`0`** → the secret string appears in that revision of the file → **omit** the finding (already on base). **Nonzero** → not present, or `git show` produced no data (e.g. path missing on base) → **keep** the finding.
+Use this block for normal secrets scans (not pre-commit).
 
-   **Why a pattern file:** Putting **`<secret>`** directly in the Bash string often **logs the secret in the command line** in the UI. The file path in the command is much safer; still **never** `cat` or print that file in any logged step.
+1. **`scan` MCP tool**
+   - `path`: absolute path to repo root (or directory)
+   - `scan_types`: `["secrets"]`
+   - `scan_options`: `{ "quick_scan": true }`
 
-   Do **not** use **`git show`** for this step in any form that **prints** the blob to stdout without piping into **`grep -q`** / **`rg -q`** (or equivalent quiet matcher).
+2. **Hydrate** — For each finding UUID from **`scan`**, **`get_resource`** (`resource_type`: **`Finding`**) before presenting details.
 
-6. **Present** — In Step 2, report **only** findings **kept** after step 5. State clearly that the list is **new vs base `<base-ref>`** (the base branch for your current branch), not the full raw scan list.
+3. **Present** — Use **§ Default presentation** in **Step 2: Present results** (full table + **Detail** when fields exist).
 
-**Default (non–pre-commit) scans** — For each finding UUID returned, use **`get_resource`** with **`resource_type`: `Finding`** before presenting details. No base-branch filtering unless the user asks for it.
+**CLI fallback (MCP unavailable)** — Only if the user confirms MCP is unavailable:
 
-CLI fallback:
 ```bash
 npx -y endorctl scan --path $(pwd) --secrets --output-type summary
 ```
 
-### Step 2: Present Results
+No base-branch filtering unless the user asks.
 
-**Do not expose secret values** — In chat, transcripts, and markdown, include **only**: **type**, **severity**, **description** (from the finding / scanner), and **location** (file path and line; add column/region if the API provides it). **Never** include: the literal secret, redacted “preview” slices of it, **`git show` (or any command) stdout/stderr that contains the file body**, or before/after code that would reveal it. Base-branch checks must use **quiet pipelines** (step 5). Describe remediation in **generic** terms (e.g. “move to `process.env.API_KEY`”) without pasting sensitive lines. See also **Safety** in `rules/endor-safety.md`.
+---
+
+## Step 2: Present results
+
+### Shared rules (both paths)
+
+- **Never** expose literal secrets, risky previews, or dumps of secret-bearing file bodies. Describe remediation in **generic** terms (e.g. env vars, secrets manager). See **`rules/endor-safety.md`** (Safety).
 
 If secrets found, lead with:
-> **SECRETS DETECTED** - {count} exposed credentials found. Rotate immediately -- they may already be compromised if committed to version control.
+> **SECRETS DETECTED** - {count} secret credentials found. **Rotate** if they were **pushed** or live in **remote git history**; if **only local** and never pushed, **fix the code** first — rotation often unnecessary unless the value was committed or otherwise exposed.
 
-For **pre-commit / staged-only** runs, `{count}` must be the number of findings **after** base-branch filtering (`git show` check). Include the **Compared to base** line below; omit it for full-repo scans.
+**Immediate Actions:**
+1. **Rotation** — **If** pushed to a **git remote** (or otherwise exposed: fork, CI, etc.), **rotate** (revoke old, issue new). **If** **only locally** (never committed / never on remote), **rotation usually not required**; remove from code and **do not** push. Still **rotate** if **committed locally** (even unpushed), copied elsewhere, or exposure is **uncertain**.
+2. Replace with config / secrets-manager references — **never** paste new secret values here.
+3. Check **git history and remotes**; if the secret is in **any commit reachable from a remote**, assume exposure and rotate.
+
+**Remediation (no literals):** generic steps only — no code blocks containing secrets.
+
+### Recommendations
+
+1. **Rotate** what reached a **remote** or **shared** history; for **local-only**, prioritize **removal** and **blocking push** — rotate if committed locally or uncertain.
+2. Add to `.gitignore`: `.env`, `.env.local`, `*.pem`, `*.key`, `credentials.json`
+3. Use environment variables for secrets; prefer a secrets manager where appropriate.
+4. Check history: `git log --all --full-history -- "*.env"`
+
+### Next Steps
+
+- `/endor-scan` — Full scan for other issues  
+- `/endor-review` — Pre-PR security check  
+
+For data source policy, read `references/data-sources.md`.
+
+---
+
+### Pre-commit presentation
+
+- **`{count}`** = findings from **`endorctl --pre-commit-checks`** (staged / vs-base already applied by CLI).
+- Include **Scan mode** line. Summary table: **only** columns **`#`** and **`Location`** — **do not** fabricate Type / Severity / Description.
+- **Omit** per-finding **Detail** blocks unless the CLI provides extra fields (rare).
 
 ```markdown
 ## Secrets Scan Results
 
 **Path:** {scanned path} | **Secrets Found:** {count}
 
-**Compared to base:** `<base-ref>` — only secrets not already present in that base branch’s version of each file *(pre-commit / staged-only)*
+**Scan mode:** pre-commit (`endorctl --pre-commit-checks` — staged changes; pre-existing-on-base handled by CLI)
 
-### Exposed Secrets
+### Detected Secrets
+
+| # | Location |
+|---|----------|
+| 1 | `config/aws.js:15` |
+```
+
+Then append **Immediate Actions**, **Remediation**, **Recommendations**, and **Next Steps** from **§ Shared rules** above.
+
+---
+
+### Default presentation
+
+- Omit **Scan mode**.
+- Use the **full** table when **`get_resource`** (or MCP) supplies type / severity / description / location.
+- Add **Detail** blocks per finding when those fields exist.
+
+**Never** output **both** the pre-commit two-column table and the full table in one report.
+
+```markdown
+## Secrets Scan Results
+
+**Path:** {scanned path} | **Secrets Found:** {count}
+
+### Detected Secrets
 
 | # | Type | Severity | Description | Location |
 |---|------|----------|-------------|----------|
-| 1 | AWS Access Key | Critical | Exposed long-lived cloud credential | `config/aws.js:15` |
+| 1 | AWS Access Key | Critical | Detected long-lived cloud credential | `config/aws.js:15` |
 
 ### Detail: {Finding #N}
 
@@ -111,37 +160,30 @@ For **pre-commit / staged-only** runs, `{count}` must be the number of findings 
 **Type:** {secret_type}  
 **Severity:** {severity}  
 **Description:** {finding description / risk summary — no secret literal}
-
-**Immediate Actions:**
-1. Rotate this credential immediately (generate new, revoke old)
-2. Replace with a reference to configuration or a secrets manager — do not paste the new value here
-3. Check git history for prior commits that may have leaked the same material
-
-**Remediation (no literals):**
-{Brief generic steps only — e.g. which env var or secret store to use — **no** code blocks containing the old or new secret}
-
-### Recommendations
-
-1. Rotate all exposed secrets immediately
-2. Add to .gitignore: `.env`, `.env.local`, `*.pem`, `*.key`, `credentials.json`
-3. Use environment variables for all secrets
-4. Use a secrets manager (AWS Secrets Manager, HashiCorp Vault, etc.)
-5. Check git history: `git log --all --full-history -- "*.env"`
-
-### Next Steps
-
-- `/endor-scan` - Full scan for other issues
-- `/endor-review` - Pre-PR security check
 ```
 
-For data source policy, read references/data-sources.md.
+Then append **Immediate Actions**, **Remediation**, **Recommendations**, and **Next Steps** from **§ Shared rules** above.
 
-## Error Handling
+---
+
+## Error handling
+
+### Pre-commit path
 
 | Condition | Action |
 |-----------|--------|
-| No secrets found | Confirm scan completed; suggest periodic re-scanning |
-| Pre-commit: every finding matched base branch (`git show`) | Report **zero new secrets vs base**; raw scan may still have matched pre-existing lines |
-| Base branch ref unclear | Try `symbolic-ref refs/remotes/origin/HEAD` and common `origin/main` / `origin/master`; then ask the user which ref to use for `git show` |
-| Auth error | Suggest `/endor-setup` |
-| MCP not available | Suggest `/endor-setup` to configure |
+| Tempted to use MCP **`scan`** | Use **`endorctl scan … --pre-commit-checks`** only |
+| **`endorctl`** / **`npx`** fails (auth, namespace) | **`/endor-setup`**; align **`-n`** with **`CLAUDE.md`** |
+
+### Default path
+
+| Condition | Action |
+|-----------|--------|
+| Auth error | **`/endor-setup`** |
+| MCP not available | **`/endor-setup`**; then CLI fallback if user confirms |
+
+### Both paths
+
+| Condition | Action |
+|-----------|--------|
+| No secrets found | Confirm the scan completed; suggest periodic re-scanning |
