@@ -27,6 +27,7 @@ Applies to any workflow that invokes Git (staged file lists, diffs, status), not
 
 - Do **not** run **`git show <ref>:<path>`** (or similar) for content that may include **credentials** in a way that **prints the blob** to Bash/tool output — transcripts will capture it.
 - Pipe into a **quiet** matcher and use **exit status only** (e.g. **`… | grep -qF -f <pattern-file>`** then **`rm` the file**). Avoid embedding the raw secret in the **command string** when the UI logs commands; prefer a **short-lived pattern file** (restricted mode) over inline literals.
+- For **containment / equality-style checks**, use **`grep -qF`** (POSIX) — **not** **`sha256sum`**, **`md5`**, **`md5sum`**, **`shasum`**, etc., which vary between macOS and Linux and are unnecessary for substring checks.
 
 ## Tool Usage
 
