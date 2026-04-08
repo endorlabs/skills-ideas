@@ -41,7 +41,7 @@ Use `scan` MCP tool:
 
 **CLI fallback** (only if MCP genuinely unavailable):
 ```bash
-npx -y endorctl scan --path $(pwd) --dependencies --secrets --gh-actions --output-type summary -n <namespace>
+npx -y endorctl scan --path $(pwd) --dependencies --secrets --ghactions --output-type summary -n <namespace>
 ```
 
 Show exact error messages — do not guess at causes.
