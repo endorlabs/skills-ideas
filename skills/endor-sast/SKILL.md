@@ -43,6 +43,8 @@ Enable with `--ai-sast-analysis=agent-fallback` flag. If licensing error occurs,
 
 Use `scan` MCP tool: `scan_types: ["sast"]`, `scan_options: { "quick_scan": true }`.
 
+The MCP `scan` tool accepts structured JSON only (`path`, `scan_types`, `scan_options`, optional `namespace`); it does **not** pass through arbitrary `endorctl scan` CLI flags such as `--ai-sast-analysis`. Use the CLI fallback below for AI false-positive reduction.
+
 CLI fallback:
 ```bash
 # Standard
