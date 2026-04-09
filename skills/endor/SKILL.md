@@ -35,7 +35,8 @@ Detect user intent and route to the appropriate specialized skill.
 | License check/compliance | `/endor-license` |
 | PR review, pre-merge check | `/endor-review` |
 | SBOM | `/endor-sbom` |
-| CI/CD, pipeline, GitHub Actions | `/endor-cicd` |
+| Workflow security, vulnerable actions | `/endor-ghactions` |
+| CI/CD templates, add Endor to pipeline | `/endor-cicd` |
 | Container/Docker scan | `/endor-container` |
 | Policy, enforcement | `/endor-policy` |
 | API query, raw API | `/endor-api` |

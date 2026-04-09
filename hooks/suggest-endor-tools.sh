@@ -2,9 +2,9 @@
 # =============================================================================
 # UserPromptSubmit hook: Suggest relevant Endor Labs skills based on prompt
 # =============================================================================
-# Detects when the user mentions CVE IDs, asks about package safety, or
-# mentions "demo/try" in the context of security tools — and suggests the
-# appropriate skill.
+# Detects when the user mentions CVE IDs, asks about package safety, mentions
+# GitHub Actions workflow security, or mentions "demo/try" in the context of
+# security tools — and suggests the appropriate skill.
 #
 # Complements: detect-pr-intent.sh (which handles PR/merge intent)
 # This hook handles: CVE references, package evaluation, demo requests.
@@ -25,7 +25,7 @@ PROMPT=$(echo "$INPUT" | jq -r '.prompt // empty')
 PROMPT_LOWER=$(echo "$PROMPT" | tr '[:upper:]' '[:lower:]')
 
 # Skip if user is already invoking an endor skill
-if echo "$PROMPT_LOWER" | grep -qP '(/endor|endor-check|endor-explain|endor-score|endor-demo|endor-fix|endor-scan|endor-review|endor-sast|endor-ai-sast|endor-secrets|endor-license|endor-container|endor-cicd)'; then
+if echo "$PROMPT_LOWER" | grep -qP '(/endor|endor-check|endor-explain|endor-score|endor-demo|endor-fix|endor-scan|endor-review|endor-sast|endor-ai-sast|endor-secrets|endor-license|endor-container|endor-cicd|endor-ghactions|endor-supply-chain)'; then
   exit 0
 fi
 
@@ -55,6 +55,11 @@ fi
 # --- Troubleshooting → /endor-troubleshoot ---
 if echo "$PROMPT_LOWER" | grep -qP '(scan\s+(fail|error|broke|not\s+work)|endor.*(fail|error|broken|not\s+work)|(fail|error|broken).*endor|endorctl.*(error|fail))'; then
   SUGGESTIONS="${SUGGESTIONS}\n- Run /endor-troubleshoot to diagnose scan failures and get remediation steps"
+fi
+
+# --- GitHub Actions workflow security → /endor-ghactions ---
+if echo "$PROMPT_LOWER" | grep -qP '(github\s+actions?\s+(workflow|workflows|security|yaml|yml)|\.github/workflows|workflow\.ya?ml|insecure\s+(ci|workflow)|scan\s+(my\s+)?(gha|github\s+actions)|vulnerable\s+action(s)?(\s+version)?|harden\s+(my\s+)?(gha|github\s+actions))'; then
+  SUGGESTIONS="${SUGGESTIONS}\n- Run /endor-ghactions to scan workflows for insecure patterns and vulnerable action versions"
 fi
 
 # --- Setup/configure → /endor-setup ---

@@ -31,6 +31,7 @@ Present this reference to the user:
 | `/endor-sast` | Static application security testing |
 | `/endor-ai-sast` | View AI-powered SAST findings |
 | `/endor-secrets` | Scan for exposed secrets |
+| `/endor-ghactions` | GitHub Actions workflow security |
 | `/endor-container` | Scan container images and Dockerfiles |
 
 ### Dependency Analysis
@@ -65,6 +66,7 @@ Present this reference to the user:
 ### Quick Examples
 ```
 /endor-scan                          # Quick scan
+/endor-ghactions                     # Workflow & action security
 /endor-check lodash 4.17.15         # Check version
 /endor-fix CVE-2021-23337           # Fix a vuln
 /endor-findings critical reachable  # Filter findings

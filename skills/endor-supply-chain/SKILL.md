@@ -5,9 +5,9 @@ description: >
   GitHub Actions workflows using Endor Labs. Use when the user says "supply chain risk",
   "supply chain assessment", "assess my supply chain", "endor supply chain", "third-party
   risk", "software supply chain", or wants a combined view of dependency vulnerabilities,
-  leaked secrets, and CI/CD pipeline risks. Do NOT use for code-level SAST scanning
-  (/endor-sast), single package checks (/endor-check), or full reachability analysis
-  (/endor-scan-full).
+  leaked secrets, and CI/CD pipeline risks. Do NOT use for GitHub Actions workflows only
+  (/endor-ghactions), code-level SAST scanning (/endor-sast), single package checks
+  (/endor-check), or full reachability analysis (/endor-scan-full).
 ---
 
 # Endor Labs Supply Chain Risk Assessment
