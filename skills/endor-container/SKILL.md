@@ -118,10 +118,10 @@ secrets:
 
 ### Image Scanning
 
-For built images, scan with:
+The MCP `scan` tool accepts a repository `path` only; it does **not** accept a container image reference. For images, use the CLI:
 
 ```bash
-npx -y endorctl scan --image {image_name}:{tag} --output-type summary
+npx -y endorctl container scan --image {image_name}:{tag} --output-type summary
 ```
 
 Present results similar to `/endor-scan` output.
