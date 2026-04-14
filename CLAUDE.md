@@ -113,6 +113,7 @@ This repo includes Claude Code skills for security workflows. Use `/endor-help` 
 - `/endor-check <package>` - Check a dependency for vulnerabilities and malware
 - `/endor-fix <CVE>` - Get remediation guidance
 - `/endor-review` - Pre-PR security review
+- `/endor-ghactions` - GitHub Actions workflow security scan
 - `/endor-setup` - First-time setup wizard
 
 ### Security Hooks
@@ -135,7 +136,7 @@ This repo uses Claude Code hooks to route to Endor Labs skills at the right mome
 ```
 skills/          - Claude Code skills (slash commands)
   references/    - Shared reference docs for all skills
-  endor-*/       - Individual skill directories (24 skills)
+  endor-*/       - Individual skill directories (25+ skills)
 hooks/           - Hooks (route to Endor Labs skills at the right moments)
 rules/           - Automatic security rules
 settings.json    - MCP server and hooks configuration template

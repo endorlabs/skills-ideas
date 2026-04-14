@@ -24,7 +24,7 @@ Hooks receive JSON on stdin with session, tool, and input context.
 | `post-scan-routing.sh` | PostToolUse → MCP scan | Routes scan results to findings/fix workflow | `/endor-findings`, `/endor-fix` |
 | `mcp-error-recovery.sh` | PostToolUse → MCP `*` | Handles auth errors, scan failures | `/endor-setup`, `/endor-troubleshoot` |
 | `detect-pr-intent.sh` | UserPromptSubmit | Detects PR/merge/push intent in prompt | `/endor-review` |
-| `suggest-endor-tools.sh` | UserPromptSubmit | Detects CVE IDs, package safety questions | `/endor-explain`, `/endor-score`, `/endor-demo` |
+| `suggest-endor-tools.sh` | UserPromptSubmit | CVEs, package safety, GitHub Actions workflow prompts | `/endor-explain`, `/endor-score`, `/endor-demo`, `/endor-ghactions` |
 | `session-review-reminder.sh` | Stop | Reminds to review if sensitive files changed | `/endor-review` |
 
 ## Event Flow

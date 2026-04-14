@@ -100,6 +100,7 @@ Restart Claude Code to pick up the configuration, then try:
 | `/endor-sast` | Static application security testing |
 | `/endor-ai-sast` | View AI-powered SAST findings from platform |
 | `/endor-secrets` | Find exposed secrets and credentials |
+| `/endor-ghactions` | Scan GitHub Actions workflows for insecure patterns and vulnerable actions |
 | `/endor-container` | Scan Dockerfiles and container images |
 
 ### Dependency Analysis
@@ -239,7 +240,7 @@ See [`hooks/README.md`](hooks/README.md) for full documentation, event flow diag
 | `post-scan-routing.sh` | After MCP scan completes | Routes scan results → `/endor-findings`, `/endor-fix` |
 | `mcp-error-recovery.sh` | After MCP tool error | Handles MCP errors → `/endor-setup` |
 | `detect-pr-intent.sh` | User mentions PR/merge | Suggests `/endor-review` |
-| `suggest-endor-tools.sh` | User mentions CVE/package | Suggests relevant `/endor-*` skills |
+| `suggest-endor-tools.sh` | User mentions CVE/package or GitHub Actions workflows | Suggests relevant `/endor-*` skills |
 | `session-review-reminder.sh` | Session end | Reminds to run `/endor-review` |
 
 ## Automatic Security Rules
@@ -307,6 +308,7 @@ skills/                        # Claude Code skills (slash commands)
 ├── endor-explain/             # CVE details
 ├── endor-score/               # Package health
 ├── endor-secrets/             # Secrets detection
+├── endor-ghactions/           # GitHub Actions workflow security
 ├── endor-sast/                # Static analysis
 ├── endor-ai-sast/             # AI-powered SAST findings
 ├── endor-license/             # License compliance
@@ -325,7 +327,7 @@ hooks/                         # Hooks (route to Endor Labs skills)
 ├── post-scan-routing.sh       # Scan → /endor-findings → /endor-fix
 ├── mcp-error-recovery.sh      # MCP errors → /endor-setup
 ├── detect-pr-intent.sh        # PR intent → /endor-review
-├── suggest-endor-tools.sh     # CVE/package → relevant /endor-* skill
+├── suggest-endor-tools.sh     # CVE/package/GHA → relevant /endor-* skill
 └── session-review-reminder.sh # Session-end → /endor-review reminder
 rules/                         # Always-on security rules
 ├── endor-prevent.md           # Post-tool dependency check rule
