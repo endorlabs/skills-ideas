@@ -111,3 +111,7 @@ For data source policy, read references/data-sources.md.
 | Policy already exists | Offer to update or rename |
 | Invalid filter | Help fix syntax |
 | Auth error | Suggest `/endor-setup` |
+
+## Related
+
+- `/endor-validate-policy` — Test whether a policy matches findings in a project before enforcing it
