@@ -29,9 +29,15 @@ Extract from user input:
    - Input file — JSON file with template parameter values
    - Output format — json, yaml, or table (default: table)
 
+## SBOM-Based Projects
+
+Projects created from SBOMs (e.g., `pkg:sbom/...`) have no git-based scan releases. The validate command loads findings by release, so without `--all-releases` it will find no data and return 0 matches even when matching findings exist.
+
+**Always use `--all-releases` for SBOM-based projects.** Detect them by checking if the project name starts with `pkg:sbom/` or if `spec.sbom` is present in the project resource.
+
 ## Workflow
 
-### Step 1: Resolve Identifiers
+### Step 1: Resolve Identifiers and Detect Project Type
 
 If the user provides names instead of UUIDs, resolve them:
 
@@ -45,11 +51,18 @@ endorctl api list --resource Project --filter "meta.name contains '{name}'" --fi
 endorctl api list --resource Policy --filter "meta.name contains '{name}'" --field-mask "uuid,meta.name" 2>/dev/null
 ```
 
+Check if the project is SBOM-based (name starts with `pkg:sbom/` or has `spec.sbom`). If so, you **must** add `--all-releases` to the validate command.
+
 ### Step 2: Validate
 
-**By policy UUID against a project:**
+**By policy UUID against a project (git-based):**
 ```bash
 endorctl validate policy --policy-uuid "{POLICY_UUID}" --uuid "{PROJECT_UUID}" 2>&1
+```
+
+**By policy UUID against an SBOM-based project (requires --all-releases):**
+```bash
+endorctl validate policy --policy-uuid "{POLICY_UUID}" --uuid "{PROJECT_UUID}" --all-releases 2>&1
 ```
 
 **By policy UUID against a PR scan:**
@@ -123,6 +136,7 @@ endorctl validate policy --policy-uuid "{POLICY_UUID}" --uuid "{PROJECT_UUID}" -
 No findings in this project match the policy criteria.
 
 ### Possible Reasons
+- **SBOM-based project without `--all-releases`** — if the project name starts with `pkg:sbom/`, retry with `--all-releases`
 - The targeted vulnerability may not exist in this project's dependencies
 - Filter criteria (severity, relationship, scope) may be too narrow
 - Project may not have been scanned yet
@@ -142,5 +156,6 @@ No findings in this project match the policy criteria.
 | Invalid Rego | Show syntax error from output; suggest fixing the rule |
 | Auth error | Suggest `/endor-setup` |
 | No scan data | Project may need scanning first; suggest `/endor-scan` |
+| 0 matches on SBOM project | Add `--all-releases` — SBOM projects have no git releases so findings won't load without it |
 
 For data source policy, read `references/data-sources.md`.
