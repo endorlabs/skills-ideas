@@ -39,6 +39,7 @@ Detect user intent and route to the appropriate specialized skill.
 | CI/CD templates, add Endor to pipeline | `/endor-cicd` |
 | Container/Docker scan | `/endor-container` |
 | Policy, enforcement | `/endor-policy` |
+| Validate policy, test policy match | `/endor-validate-policy` |
 | API query, raw API | `/endor-api` |
 
 ## Ambiguous Requests

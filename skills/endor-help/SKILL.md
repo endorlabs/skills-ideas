@@ -56,6 +56,7 @@ Present this reference to the user:
 | `/endor-review` | Pre-PR security review |
 | `/endor-sbom` | SBOM management |
 | `/endor-policy` | Security policy management |
+| `/endor-validate-policy` | Validate policy against a project |
 | `/endor-cicd` | Generate CI/CD pipelines |
 
 ### Advanced
