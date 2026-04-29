@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python skills/endor-reports/run.py:*)",
+      "Bash(endorctl auth status:*)",
+      "Bash(endorctl whoami:*)",
+      "Bash(endorctl api list:*)"
+    ]
+  }
+}

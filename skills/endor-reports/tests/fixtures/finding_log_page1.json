@@ -1,0 +1,51 @@
+{
+  "list": {
+    "objects": [
+      {
+        "uuid": "fl-uuid-001",
+        "meta": {
+          "name": "dependency_with_high_severity_vulnerabilities",
+          "description": "GHSA-aaaa-bbbb-cccc: Critical RCE in libfoo via deserialization",
+          "parent_kind": "Project",
+          "parent_uuid": "abc123abc123abc123abc123",
+          "update_time": "2026-04-10T14:30:00Z",
+          "create_time": "2026-04-10T14:30:00Z",
+          "kind": "FindingLog"
+        },
+        "spec": {
+          "operation": "OPERATION_DELETE",
+          "finding_uuid": "f-uuid-001",
+          "level": "FINDING_LEVEL_CRITICAL",
+          "ecosystem": "ECOSYSTEM_PYPI",
+          "finding_tags": ["FINDING_TAGS_REACHABLE_FUNCTION", "FINDING_TAGS_FIX_AVAILABLE"],
+          "introduced_at": "2026-04-10T14:30:00Z",
+          "target_dependency_package_name": "pypi://libfoo@1.0.0"
+        }
+      },
+      {
+        "uuid": "fl-uuid-002",
+        "meta": {
+          "name": "bad_license",
+          "description": "",
+          "parent_kind": "Project",
+          "parent_uuid": "abc123abc123abc123abc123",
+          "update_time": "2026-04-15T09:00:00Z",
+          "create_time": "2026-03-01T09:00:00Z",
+          "kind": "FindingLog"
+        },
+        "spec": {
+          "operation": "OPERATION_DELETE",
+          "finding_uuid": "f-uuid-002",
+          "level": "FINDING_LEVEL_HIGH",
+          "ecosystem": "ECOSYSTEM_NPM",
+          "finding_tags": ["FINDING_TAGS_FIX_AVAILABLE"],
+          "introduced_at": "2026-03-01T09:00:00Z",
+          "target_dependency_package_name": "npm://libbar@2.0.0"
+        }
+      }
+    ],
+    "response": {
+      "next_page_id": "PAGE2_TOKEN"
+    }
+  }
+}

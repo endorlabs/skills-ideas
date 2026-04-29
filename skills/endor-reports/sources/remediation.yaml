@@ -1,0 +1,43 @@
+name: remediation
+description: Findings remediated (OPERATION_DELETE) within a date range
+modes: [api_list]
+default_mode: api_list
+default_format: [csv]
+parameters:
+  - { name: start_date, type: date, required: true }
+  - { name: end_date,   type: date, required: true }
+  - { name: project_uuid, type: string, required: false }
+api_list:
+  resource: FindingLog
+  filter_template: |
+    spec.operation == "OPERATION_DELETE"
+    and meta.update_time >= "{{start_date}}T00:00:00Z"
+    and meta.update_time <= "{{end_date}}T23:59:59Z"
+    {{#if project_uuid}}and meta.parent_uuid == "{{project_uuid}}"{{/if}}
+  fetched_fields:
+    - uuid
+    - meta.name
+    - meta.description
+    - meta.parent_uuid
+    - meta.create_time
+    - meta.update_time
+    - spec.finding_uuid
+    - spec.level
+    - spec.ecosystem
+    - spec.finding_tags
+    - spec.introduced_at
+    - spec.target_dependency_package_name
+  default_columns:
+    - { header: "Finding Log UUID", source: uuid }
+    - { header: "Finding UUID",     source: spec.finding_uuid }
+    - { header: "Type",             source: meta.name }
+    - { header: "Description",      source: meta.description, fallback: "" }
+    - { header: "Severity",         source: spec.level }
+    - { header: "Ecosystem",        source: spec.ecosystem, fallback: "" }
+    - { header: "Package",          source: spec.target_dependency_package_name, fallback: "" }
+    - { header: "Resolved At",      source: meta.update_time, format: iso_date }
+    - { header: "Introduced At",    source: spec.introduced_at, format: iso_date }
+    - { header: "Project UUID",     source: meta.parent_uuid }
+    - { header: "Tags",             source: spec.finding_tags, fallback: "" }
+  pagination:
+    page_size: 500

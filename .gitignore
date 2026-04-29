@@ -1,4 +1,5 @@
 settings.local.json
+scheduled_tasks.lock
 
 # Dependencies
 node_modules/
@@ -25,3 +26,13 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+skills/endor-reports/.venv/
+
+# Python bytecode caches
+__pycache__/
+*.pyc
+*.pyo
+
+# pytest
+.pytest_cache/
+

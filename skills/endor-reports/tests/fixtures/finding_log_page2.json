@@ -1,0 +1,28 @@
+{
+  "list": {
+    "objects": [
+      {
+        "uuid": "fl-uuid-003",
+        "meta": {
+          "name": "dependency_with_medium_severity_vulnerabilities",
+          "description": "GHSA-pppp-qqqq-rrrr: SQL injection in libbaz prepared statements",
+          "parent_kind": "Project",
+          "parent_uuid": "abc123abc123abc123abc123",
+          "update_time": "2026-04-20T11:45:00Z",
+          "create_time": "2026-02-01T11:45:00Z",
+          "kind": "FindingLog"
+        },
+        "spec": {
+          "operation": "OPERATION_DELETE",
+          "finding_uuid": "f-uuid-003",
+          "level": "FINDING_LEVEL_MEDIUM",
+          "ecosystem": "ECOSYSTEM_GO",
+          "finding_tags": [],
+          "introduced_at": "2026-02-01T11:45:00Z",
+          "target_dependency_package_name": "go://github.com/example/libbaz@v1.2.3"
+        }
+      }
+    ],
+    "response": {}
+  }
+}
