@@ -87,6 +87,35 @@ npx -y endorctl api list --resource Metric -n oss \
   --filter "meta.name==package_version_scorecard and meta.parent_uuid=={pkg_uuid}" 2>/dev/null
 ```
 
+### Step 3.5: Field-Mask Gotcha -- the Struct Boundary
+
+`--field-mask` only works on **typed proto fields**. Some resources have free-form JSON blobs (`google.protobuf.Struct` / `Any`) whose contents are opaque to proto. Field-masks behave differently at that boundary:
+
+- **Outside a Struct:** an invalid path errors loudly (`ERROR invalid-args: mask: proto: invalid path "..." for message ...`).
+- **Past a Struct boundary:** a path is silently accepted but returns an empty container -- the server projects up to the typed field and stops.
+
+**Tell-tale signs you've hit a Struct:**
+- The keys inside are **PascalCase** (e.g. `ScanConfig`, `IncludePath`) instead of typed proto **snake_case** (`scan_config`, `include_path`). PascalCase = a Go struct serialized into an untyped JSON container.
+- A deeper field-mask returns `{}` for that field instead of an error.
+
+**Workaround:** mask down to the typed boundary, then carve with `jq` using PascalCase paths.
+
+Known Struct fields:
+| Resource | Struct field | Carve with jq |
+|----------|--------------|---------------|
+| `ScanResult` | `spec.environment.config` | `.ScanConfig.IncludePath`, `.ScanConfig.Languages`, etc. |
+
+Example -- get include-paths from ScanResults (full recipe in `/endor-scan-config`):
+
+```bash
+npx -y endorctl api list -r ScanResult -n $ENDOR_NAMESPACE \
+  --filter "meta.parent_kind==Project and meta.parent_uuid=$PROJECT_UUID" \
+  --field-mask "uuid,spec.environment.config" -o json 2>/dev/null \
+  | jq '.list.objects[] | {uuid, include_path: .spec.environment.config.ScanConfig.IncludePath}'
+```
+
+Do NOT try `--field-mask "spec.environment.config.scan_config.include_path"` -- it returns `config: {}`.
+
 ### Step 4: Present Results
 
 ```markdown
