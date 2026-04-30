@@ -36,14 +36,27 @@ PROJECT_UUID=$(npx -y endorctl api list -r Project -n $ENDOR_NAMESPACE \
 
 ### Step 2: Pull ScanResults for the project
 
-Always filter by `meta.parent_kind==Project and meta.parent_uuid==$PROJECT_UUID`. Mask down to the typed boundary to keep the payload small (a full ScanResult includes findings, stats, ecosystem counts -- usually irrelevant for config inspection):
+Filter on three things, every time:
+
+1. `meta.parent_kind==Project and meta.parent_uuid==$PROJECT_UUID` -- scope to this project.
+2. `context.type==CONTEXT_TYPE_MAIN` -- main-branch scans only. Without this you'll mix PR scans, ref scans, and main-branch scans together, and PR scans often have very different config (incremental, different paths) than the canonical main-branch scan.
+3. `--list-all` -- return every scan, not just the first page.
 
 ```bash
 npx -y endorctl api list -r ScanResult -n $ENDOR_NAMESPACE \
-  --filter "meta.parent_kind==Project and meta.parent_uuid==$PROJECT_UUID" \
+  --filter "meta.parent_kind==Project and meta.parent_uuid==$PROJECT_UUID and context.type==CONTEXT_TYPE_MAIN" \
   --field-mask "uuid,meta.create_time,spec.environment.config,spec.exit_code,spec.start_time,spec.end_time" \
+  --list-all \
   -o json 2>/dev/null
 ```
+
+**Always use `--list-all`.** Without it the call returns a single page (~100 results) and silently drops older scans -- a project with hundreds of CI runs will look incomplete and "unique include-paths across history" will be wrong. If the user explicitly asks for "the latest scan only," drop `--list-all` and add `--sort-order descending --sort-path meta.create_time --page-size 1` instead.
+
+**If the user explicitly wants PR or ref scans**, swap the context filter:
+- Main branch: `context.type==CONTEXT_TYPE_MAIN` (the default for this skill)
+- PRs: `context.type==CONTEXT_TYPE_PR`
+- Specific ref: `context.type==CONTEXT_TYPE_REF`
+- All contexts: drop the `context.type==...` clause entirely.
 
 Note: `--field-mask "spec.environment.config.scan_config.*"` does NOT work -- it returns `config: {}`. Mask only as far as `spec.environment.config`.
 
@@ -70,8 +83,9 @@ Example -- show include/exclude paths across all scans:
 
 ```bash
 npx -y endorctl api list -r ScanResult -n $ENDOR_NAMESPACE \
-  --filter "meta.parent_kind==Project and meta.parent_uuid==$PROJECT_UUID" \
+  --filter "meta.parent_kind==Project and meta.parent_uuid==$PROJECT_UUID and context.type==CONTEXT_TYPE_MAIN" \
   --field-mask "uuid,meta.create_time,spec.environment.config" \
+  --list-all \
   -o json 2>/dev/null \
   | jq -r '.list.objects[] | {
       uuid,
@@ -122,7 +136,7 @@ Lead with the *answer to the question asked* (e.g. "this project has 12 scans, 3
 ## Gotchas
 
 - **Empty `Include`/`IncludePath` is the common case** -- most scans run without path filters. Don't report "no data" if the field is `null`; report "no path filters were configured for any scan."
-- **A project can have many ScanResults** (one per CI run, branch, PR). Add `--page-size N` and `--sort-order descending --sort-path meta.create_time` for the most recent first, or paginate with `--list-all` if the user wants the full history.
+- **A project can have many ScanResults** (one per CI run, branch, PR). The recipe uses `--list-all` so the full history is returned. If the user only wants the latest scan, swap to `--sort-order descending --sort-path meta.create_time --page-size 1` and drop `--list-all`.
 - **Sub-namespaces:** if the project's scans live in child namespaces, add `--traverse` to the `endorctl api list` call.
 - **Don't try to be clever with field-masks past `config`** -- it's a Struct; everything inside is opaque to proto. Mask to `spec.environment.config` and `jq` from there.
 

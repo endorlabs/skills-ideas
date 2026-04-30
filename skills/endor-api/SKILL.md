@@ -109,8 +109,8 @@ Example -- get include-paths from ScanResults (full recipe in `/endor-scan-confi
 
 ```bash
 npx -y endorctl api list -r ScanResult -n $ENDOR_NAMESPACE \
-  --filter "meta.parent_kind==Project and meta.parent_uuid=$PROJECT_UUID" \
-  --field-mask "uuid,spec.environment.config" -o json 2>/dev/null \
+  --filter "meta.parent_kind==Project and meta.parent_uuid=$PROJECT_UUID and context.type==CONTEXT_TYPE_MAIN" \
+  --field-mask "uuid,spec.environment.config" --list-all -o json 2>/dev/null \
   | jq '.list.objects[] | {uuid, include_path: .spec.environment.config.ScanConfig.IncludePath}'
 ```
 
